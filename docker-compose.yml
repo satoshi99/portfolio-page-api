@@ -1,0 +1,57 @@
+version: '3.8'
+services:
+  api:
+    image: "fastapi_starter:1.0.0"
+    container_name: "api_container"
+    depends_on:
+      - db
+    build:
+      context: docker/api
+      target: development
+    environment:
+      PYTHONPATH: /usr/src/app/app
+      APP_ENV: "development"
+      TZ: "Asia/Tokyo"
+    env_file:
+      - ./.env.development
+    volumes:
+      - ./src:/usr/src/app:cached
+    working_dir: /usr/src/app/app
+    command: "uvicorn main:app --reload --port=8000 --host=0.0.0.0"
+    ports:
+      - "8000:8000"
+    networks:
+      - internal
+      - external
+  
+  db:
+    image: "fastapi_starter_db:0.1.0"
+    container_name: "db_container"
+    build:
+      context: docker/db
+    restart: 'always'
+    tty: true
+    expose:
+      - "3306"
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/db/conf.d:/etc/mysql/conf.d:delegated
+      - mysql_data:/var/lib/mysql:delegated
+    environment:
+      APP_ENV: "development"
+      TZ: "Asia/Tokyo"
+    env_file:
+      - ./.env.development
+    networks:
+      - internal
+
+volumes:
+  mysql_data:
+
+networks:
+  internal:
+    internal: true
+  external:
+    name: api_network
+    external: true

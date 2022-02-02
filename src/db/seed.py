@@ -1,16 +1,19 @@
 from database import SessionLocal
-from models import Admin, Post, Tag, TagPostMapTable
+from models import Admin, Post, Tag
 
 db = SessionLocal()
 
 
 def seed():
-    admin = Admin(email="guest@gmail.com",
-                  hashed_password="19211D487CD5C1907F5892435E5A1A382960D4E7B335E65CDCE5A2FA0598B19D")
-    tags = [
-        Tag(title="Python", slug="python"),
-        Tag(title="React.js", slug="reactjs"),
-        ]
+    new_admin = Admin(email="guest@gmail.com", hashed_password="secrethashedpassword")
+    db.add(new_admin)
+    db.commit()
+
+    new_tag = Tag(title="Python", slug="python")
+    db.add(new_tag)
+    new_tag = Tag(title="React.js", slug="reactjs")
+    db.add(new_tag)
+    db.commit()
 
     post = Post(
         title="post title",
@@ -18,13 +21,14 @@ def seed():
         description="description post ---------",
         content="content -------------",
         is_public=True,
-        author_id=admin.id,
+        author_id="13534c723c044e10a4a8eb342180965e"
     )
+    db.add(post)
+    db.commit()
 
-    post.tags = tags
-
-    db.add(admin)
-    db.add(tags)
+    post = db.query(Post).filter(Post.title == "post title").first()
+    tag = db.query(Tag).filter(Tag.title == "React.js").first()
+    post.tags.append(tag)
     db.add(post)
     db.commit()
 

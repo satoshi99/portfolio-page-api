@@ -1,10 +1,7 @@
 from uuid import UUID
-from fastapi import HTTPException, status
-from fastapi.encoders import jsonable_encoder
-from typing import Union
+from sqlalchemy.orm import Session
 from models import admin as model
 from schemas import admin as schema
-from .base import BaseCRUD
 
 import logging
 from logging import LogRecord
@@ -22,44 +19,43 @@ logger.addHandler(log_file)
 logger.addFilter(NoPasswordLogFilter())
 
 
-class AdminCRUD(BaseCRUD):
+class AdminCrud:
 
-    def get_admin(self, key: Union[UUID, str]) -> model.Admin:
+    @staticmethod
+    def get_admin_by_id(admin_id: UUID, db: Session) -> model.Admin:
         logger.info({
-            "action": "get admin model by id or email",
-            "key": type(key),
+            "action": "get admin model by id",
+            "admin_id": admin_id,
             "status": "run"
         })
 
-        if type(key) == UUID:
-            db_admin = self.db.query(model.Admin).filter(model.Admin.id == key).first()
-        else:
-            db_admin = self.db.query(model.Admin).filter(model.Admin.email == key).first()
-
-        if not db_admin:
-            logger.error(f"Failed to get admin by {type(key)} (UUID: admin_id, str: email) from DB")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Admin user not found"
-            )
+        db_admin = db.query(model.Admin).filter(model.Admin.id == admin_id).first()
 
         logger.info({
-            "action": "get admin model by id or email",
-            "key": type(key),
+            "action": "get admin model by id",
             "status": "success"
         })
 
         return db_admin
 
-    # def get_admin_by_email(self, email: str) -> Union[schema.AdminInDB, bool]:
-    #     db_admin = self.get_admin(key=email)
-    #     return schema.AdminInDB(**jsonable_encoder(db_admin))
-    #
-    # def get_admin_by_id(self, admin_id: UUID) -> Union[schema.AdminInDB, bool]:
-    #     db_admin = self.get_admin(key=admin_id)
-    #     return schema.AdminInDB(**jsonable_encoder(db_admin))
+    @staticmethod
+    def get_admin_by_email(email: str, db: Session) -> model.Admin:
+        logger.info({
+            "action": "get admin model by email",
+            "status": "run"
+        })
 
-    def create_admin(self, email: str, hashed_password: str) -> schema.Admin:
+        db_admin = db.query(model.Admin).filter(model.Admin.email == email).first()
+
+        logger.info({
+            "action": "get admin model by email",
+            "status": "success"
+        })
+
+        return db_admin
+
+    @staticmethod
+    def create_admin(email: str, hashed_password: str, db: Session) -> model.Admin:
         logger.info({
             "action": "insert new admin to db",
             "status": "run"
@@ -67,12 +63,12 @@ class AdminCRUD(BaseCRUD):
 
         try:
             db_admin = model.Admin(email=email, hashed_password=hashed_password)
-            self.db.add(db_admin)
-            self.db.commit()
-            self.db.refresh(db_admin)
+            db.add(db_admin)
+            db.commit()
+            db.refresh(db_admin)
         except Exception as e:
             logger.error("Failed create admin user")
-            self.db.rollback()
+            db.rollback()
             raise e
 
         logger.info({
@@ -80,64 +76,56 @@ class AdminCRUD(BaseCRUD):
             "status": "success"
         })
 
-        return schema.Admin(**jsonable_encoder(db_admin))
+        return db_admin
 
-    def update_admin(self, admin_id: UUID, new_data: schema.AdminUpdate) -> schema.Admin:
+    @staticmethod
+    def update_admin(current_admin: model.Admin, new_data: schema.AdminUpdate, db: Session) -> model.Admin:
         logger.info({
             "action": "update admin from db",
-            "admin_id": admin_id,
-            "new_data": new_data,
+            "current_admin": current_admin.id,
             "status": "run"
         })
-
-        db_admin = self.get_admin(key=admin_id)
 
         try:
             if new_data.email:
-                db_admin.email = new_data.email
-            self.db.commit()
+                current_admin.email = new_data.email
+            db.commit()
         except Exception as e:
             logger.error("Failed update admin user")
-            self.db.rollback()
+            db.rollback()
             raise e
 
         logger.info({
             "action": "update admin from db",
-            "admin_id": admin_id,
-            "new_data": new_data,
             "status": "success"
         })
 
-        return schema.Admin(**jsonable_encoder(db_admin))
+        return current_admin
 
-    def delete_admin(self, admin_id: UUID) -> bool:
+    def delete_admin(self, current_admin: model.Admin, db: Session) -> bool:
         logger.info({
             "action": "delete admin from db",
-            "admin_id": admin_id,
+            "current_admin": current_admin.id,
             "status": "run"
         })
 
-        db_admin = self.get_admin(key=admin_id)
-
         try:
-            self.db.delete(db_admin)
-            self.db.commit()
+            db.delete(current_admin)
+            db.commit()
         except Exception as e:
             logger.error("Failed delete admin user from DB")
-            self.db.rollback()
+            db.rollback()
             raise e
 
-        if not self.get_admin(key=admin_id):
+        if not self.get_admin_by_id(current_admin.id, db):
             logger.info({
                 "action": "delete admin from db",
-                "admin_id": admin_id,
                 "status": "success"
             })
             return True
         else:
             logger.info({
                 "action": "delete admin from db",
-                "admin_id": admin_id,
                 "status": "Delete process is done but the object has not deleted"
             })
             return False

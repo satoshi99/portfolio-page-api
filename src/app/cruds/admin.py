@@ -72,6 +72,7 @@ class AdminCRUD(BaseCRUD):
             self.db.refresh(db_admin)
         except Exception as e:
             logger.error("Failed create admin user")
+            self.db.rollback()
             raise e
 
         logger.info({
@@ -97,6 +98,7 @@ class AdminCRUD(BaseCRUD):
             self.db.commit()
         except Exception as e:
             logger.error("Failed update admin user")
+            self.db.rollback()
             raise e
 
         logger.info({
@@ -122,6 +124,7 @@ class AdminCRUD(BaseCRUD):
             self.db.commit()
         except Exception as e:
             logger.error("Failed delete admin user from DB")
+            self.db.rollback()
             raise e
 
         if not self.get_admin(key=admin_id):

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +11,9 @@ from routers.admin import router as admin_router
 from routers.post import router as post_router
 from routers.tag import router as tag_router
 from env import API_TITLE, API_VERSION, API_PREFIX
+
+logging.basicConfig(level=logging.INFO)
+
 
 app = FastAPI(title=API_TITLE, version=API_VERSION)
 

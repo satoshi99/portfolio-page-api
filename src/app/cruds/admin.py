@@ -89,8 +89,9 @@ class AdminCRUD(BaseCRUD):
             "status": "run"
         })
 
+        db_admin = self.get_admin(key=admin_id)
+
         try:
-            db_admin = self.get_admin(key=admin_id)
             if new_data.email:
                 db_admin.email = new_data.email
             self.db.commit()
@@ -107,23 +108,33 @@ class AdminCRUD(BaseCRUD):
 
         return schema.Admin(**jsonable_encoder(db_admin))
 
-    def delete_admin(self, admin_id: UUID) -> None:
+    def delete_admin(self, admin_id: UUID) -> bool:
         logger.info({
             "action": "delete admin from db",
             "admin_id": admin_id,
             "status": "run"
         })
 
+        db_admin = self.get_admin(key=admin_id)
+
         try:
-            db_admin = self.get_admin(key=admin_id)
             self.db.delete(db_admin)
             self.db.commit()
         except Exception as e:
             logger.error("Failed delete admin user from DB")
             raise e
 
-        logger.info({
-            "action": "delete admin from db",
-            "admin_id": admin_id,
-            "status": "success"
-        })
+        if not self.get_admin(key=admin_id):
+            logger.info({
+                "action": "delete admin from db",
+                "admin_id": admin_id,
+                "status": "success"
+            })
+            return True
+        else:
+            logger.info({
+                "action": "delete admin from db",
+                "admin_id": admin_id,
+                "status": "Delete process is done but the object has not deleted"
+            })
+            return False

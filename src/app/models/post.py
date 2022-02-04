@@ -29,7 +29,8 @@ class Post(Base, TimestampMixin):
     __tablename__ = "posts"
 
     id = Column(UUIDType(binary=False), primary_key=True, default=uuid4)
-    title = Column(String(100), nullable=False)
+    title = Column(String(200), nullable=False)
+    url_slug = Column(String(200), nullable=True, unique=True)
     thumbnail = Column(String(200), nullable=True)
     description = Column(MEDIUMTEXT, nullable=True)
     content = Column(MEDIUMTEXT, nullable=False)

@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from uuid import UUID
 
-from .tag import Tag, TagCreate
+from .tag import Tag
 
 
 class PostBase(BaseModel):
@@ -37,3 +37,7 @@ class Post(PostInDBBase):
 
 class PostInDB(PostInDBBase):
     pass
+
+
+class TagWithPosts(Tag):
+    posts: Optional[List[Post]]

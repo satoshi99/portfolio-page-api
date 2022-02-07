@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from uuid import UUID
 
-from .tag import Tag
+from .tag import Tag, TagCreate
 
 
 class PostBase(BaseModel):
@@ -11,11 +11,11 @@ class PostBase(BaseModel):
     thumbnail: Optional[str]
     description: Optional[str]
     content: str
-    is_public: bool
+    is_public: bool = False
 
 
 class PostCreate(PostBase):
-    tags: Optional[List[Tag]]
+    pass
 
 
 class PostUpdate(PostCreate):

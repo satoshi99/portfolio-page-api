@@ -1,5 +1,7 @@
 from pydantic import BaseModel
+from typing import List, Dict
 from uuid import UUID
+from .post import Post
 
 
 class AdminBase(BaseModel):
@@ -22,7 +24,7 @@ class AdminInDBBase(AdminBase):
 
 
 class Admin(AdminInDBBase):
-    pass
+    posts: List[Post]
 
 
 class AdminInDB(AdminInDBBase):

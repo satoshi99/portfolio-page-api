@@ -15,19 +15,13 @@ logger.addHandler(log_file)
 class TagCrud:
 
     @staticmethod
-    def get_tags(db: Session) -> Union[List[Tag], bool]:
+    def get_tags(db: Session) -> List[Tag]:
         logger.info({
             "action": "get all tags",
             "status": "run"
         })
 
         tags = db.query(Tag).all()
-        if len(tags) == 0:
-            logger.info({
-                "action": "get all tags",
-                "status": "Read objects but it's empty"
-            })
-            return False
 
         logger.info({
             "action": "get all tags",
@@ -37,7 +31,7 @@ class TagCrud:
         return tags
 
     @staticmethod
-    def get_tag(tag_id: UUID, db: Session) -> Union[Tag, bool]:
+    def get_tag(tag_id: UUID, db: Session) -> Tag:
         logger.info({
             "action": "get tag by id",
             "tag_id": tag_id,
@@ -45,8 +39,6 @@ class TagCrud:
         })
 
         db_tag = db.query(Tag).filter(Tag.id == tag_id).first()
-        if not db_tag:
-            return False
 
         logger.info({
             "action": "get tag by id",

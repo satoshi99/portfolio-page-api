@@ -32,7 +32,7 @@ async def get_current_admin(
     return db_admin
 
 
-@router.post("/create", response_model=admin_schema.Admin)
+@router.post("/create", responses=status.HTTP_201_CREATED, response_model=admin_schema.Admin)
 async def create_admin(
         new_admin: admin_schema.AdminCreate,
         db: Session = Depends(get_db)
@@ -46,7 +46,7 @@ async def create_admin(
     return crud.create_admin(new_admin.email, hashed_password, db)
 
 
-@router.post("/token", response_model=auth_schema.Token)
+@router.post("/token", responses=status.HTTP_201_CREATED, response_model=auth_schema.Token)
 async def login_for_access_token(
         response: Response,
         form_data: OAuth2PasswordRequestForm = Depends(),
@@ -65,18 +65,18 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.post("/logout", response_model=ResponseMsg)
+@router.post("/logout", responses=status.HTTP_200_OK, response_model=ResponseMsg)
 async def logout(response: Response):
     response.delete_cookie(key="access_token")
     return {"message": "Successfully logged-out"}
 
 
-@router.get("/myinfo", response_model=admin_schema.Admin)
+@router.get("/myinfo", responses=status.HTTP_200_OK, response_model=admin_schema.Admin)
 async def get_admin(current_admin: admin_model.Admin = Depends(get_current_admin)):
     return current_admin
 
 
-@router.put("/update", response_model=admin_schema.Admin)
+@router.put("/update", responses=status.HTTP_201_CREATED, response_model=admin_schema.Admin)
 async def update_admin(
         new_data: admin_schema.AdminUpdate,
         current_admin: admin_model.Admin = Depends(get_current_admin),
@@ -85,7 +85,7 @@ async def update_admin(
     return crud.update_admin(current_admin, new_data, db)
 
 
-@router.delete("/delete", response_model=ResponseMsg)
+@router.delete("/delete", responses=status.HTTP_200_OK, response_model=ResponseMsg)
 async def delete_admin(
         current_admin: admin_model.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)

@@ -11,7 +11,7 @@ router = APIRouter(prefix="/tags")
 crud = TagCrud()
 
 
-@router.get("", response_model=Union[List[tag_schema.Tag], ResponseMsg])
+@router.get("", responses=status.HTTP_200_OK, response_model=Union[List[tag_schema.Tag], ResponseMsg])
 async def get_tags(db: Session = Depends(get_db)):
     tags = crud.get_tags(db)
     if not tags:
@@ -20,7 +20,7 @@ async def get_tags(db: Session = Depends(get_db)):
     return tags
 
 
-@router.get("/{tag_id}", response_model=tag_schema.Tag)
+@router.get("/{tag_id}", responses=status.HTTP_200_OK, response_model=tag_schema.Tag)
 async def get_tag(tag_id: UUID, db: Session = Depends(get_db)):
     tag = crud.get_tag(tag_id, db)
     if not tag:
@@ -31,17 +31,17 @@ async def get_tag(tag_id: UUID, db: Session = Depends(get_db)):
     return tag
 
 
-@router.post("/create", response_model=tag_schema.Tag)
+@router.post("/create", responses=status.HTTP_201_CREATED, response_model=tag_schema.Tag)
 async def create_tag(new_tag: tag_schema.TagCreate, db: Session = Depends(get_db)):
     return crud.create_tag(new_tag, db)
 
 
-@router.put("/{tag_id}", response_model=tag_schema.Tag)
+@router.put("/{tag_id}", responses=status.HTTP_201_CREATED, response_model=tag_schema.Tag)
 async def update_post(tag_id: UUID, new_tag: tag_schema.TagUpdate, db: Session = Depends(get_db)):
     return crud.update_tag(tag_id, new_tag, db)
 
 
-@router.delete("{tag_id}", response_model=ResponseMsg)
+@router.delete("{tag_id}", responses=status.HTTP_200_OK, response_model=ResponseMsg)
 async def delete_post(tag_id: UUID, db: Session = Depends(get_db)):
     result = crud.delete_tag(tag_id, db)
     if result:

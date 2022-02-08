@@ -1,5 +1,4 @@
 from fastapi import APIRouter, status, HTTPException, Depends, Request, Response
-from fastapi.encoders import jsonable_encoder
 from fastapi_csrf_protect import CsrfProtect
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -26,10 +25,7 @@ async def get_my_posts(
         current_admin: admin_schema.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
-    new_token = auth.create_access_token({"sub": jsonable_encoder(current_admin.id)})
-    response.set_cookie(
-        key="access_token", value=f"Bearer {new_token}", httponly=True
-    )
+    auth.update_jwt(current_admin.id, response)
     return crud.get_my_posts(current_admin.id, db)
 
 
@@ -50,11 +46,13 @@ async def create_post(
         data: post_schema.PostCreate,
         tags: List[tag_schema.TagCreate],
         request: Request,
+        response: Response,
         csrf_protect: CsrfProtect = Depends(),
         current_admin: admin_schema.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
     auth.verify_csrf(request, csrf_protect)
+    auth.update_jwt(current_admin.id, response)
     if not data.url_slug:
         data = data.copy()
         data.url_slug = slug_transformer(data.title)
@@ -70,11 +68,13 @@ async def update_post(
         data: post_schema.PostUpdate,
         tags: List[tag_schema.TagCreate],
         request: Request,
+        response: Response,
         csrf_protect: CsrfProtect = Depends(),
         current_admin: admin_schema.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
     auth.verify_csrf(request, csrf_protect)
+    auth.update_jwt(current_admin.id, response)
     posts = current_admin.posts
     db_post = [post for post in posts if post.id == post_id]
     if not db_post:
@@ -95,11 +95,13 @@ async def update_post(
 async def delete_post(
         post_id: UUID,
         request: Request,
+        response: Response,
         csrf_protect: CsrfProtect = Depends(),
         current_admin: admin_schema.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
     auth.verify_csrf(request, csrf_protect)
+    auth.update_jwt(current_admin.id, response)
     posts = current_admin.posts
     db_post = [post for post in posts if post.id == post_id]
     if not db_post:

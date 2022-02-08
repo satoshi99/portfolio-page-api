@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
-from fastapi.encoders import jsonable_encoder
 from fastapi_csrf_protect import CsrfProtect
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -48,10 +47,7 @@ async def create_tag(
         db: Session = Depends(get_db)
 ):
     auth.verify_csrf(request, csrf_protect)
-    new_token = auth.create_access_token({"sub": jsonable_encoder(current_admin.id)})
-    response.set_cookie(
-        key="access_token", value=f"Bearer {new_token}", httponly=True
-    )
+    auth.update_jwt(current_admin.id, response)
     return crud.create_tag(new_tag, db)
 
 
@@ -66,10 +62,7 @@ async def update_tag(
         db: Session = Depends(get_db)
 ):
     auth.verify_csrf(request, csrf_protect)
-    new_token = auth.create_access_token({"sub": jsonable_encoder(current_admin.id)})
-    response.set_cookie(
-        key="access_token", value=f"Bearer {new_token}", httponly=True
-    )
+    auth.update_jwt(current_admin.id, response)
     return crud.update_tag(tag_id, new_tag, db)
 
 
@@ -83,11 +76,8 @@ async def delete_tag(
         db: Session = Depends(get_db)
 ):
     auth.verify_csrf(request, csrf_protect)
-    new_token = auth.create_access_token({"sub": jsonable_encoder(current_admin.id)})
+    auth.update_jwt(current_admin.id, response)
     result = crud.delete_tag(tag_id, db)
-    response.set_cookie(
-        key="access_token", value=f"Bearer {new_token}", httponly=True
-    )
     if result:
         return {"message": "Successfully Tag Deleted"}
     else:

@@ -81,10 +81,7 @@ async def logout(response: Response, request: Request, csrf_protect: CsrfProtect
 
 @router.get("/myinfo", status_code=status.HTTP_200_OK, response_model=admin_schema.Admin)
 async def get_admin(response: Response, current_admin: admin_model.Admin = Depends(get_current_admin)):
-    new_token = auth.create_access_token({"sub": jsonable_encoder(current_admin.id)})
-    response.set_cookie(
-        key="access_token", value=f"Bearer {new_token}", httponly=True
-    )
+    auth.update_jwt(current_admin.id, response)
     return current_admin
 
 
@@ -98,10 +95,7 @@ async def update_admin(
         db: Session = Depends(get_db)
 ):
     auth.verify_csrf(request, csrf_protect)
-    new_token = auth.create_access_token({"sub": jsonable_encoder(current_admin.id)})
-    response.set_cookie(
-        key="access_token", value=f"Bearer {new_token}", httponly=True
-    )
+    auth.update_jwt(current_admin.id, response)
     return crud.update_admin(current_admin, new_data, db)
 
 

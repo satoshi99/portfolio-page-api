@@ -1,12 +1,12 @@
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_csrf_protect import CsrfProtect
 from fastapi_csrf_protect.exceptions import CsrfProtectError
 
-from schemas.auth import CsrfSettings
+from schemas.auth import CsrfSettings, Csrf
 from routers.admin import router as admin_router
 from routers.post import router as post_router
 from routers.tag import router as tag_router
@@ -47,6 +47,12 @@ def csrf_protect_exception_handler(request: Request, exc: CsrfProtectError):
     )
 
 
+@app.post("/csrftoken", response_model=Csrf)
+def get_csrf_token(csrf_protect: CsrfProtect = Depends()):
+    csrf_token = csrf_protect.generate_csrf()
+    return {"csrf_token": csrf_token}
+
+
 @app.get("/")
-async def root():
-    return {"message": "Hello World"}
+async def get_root():
+    return {"message": "Welcome to FastAPI"}

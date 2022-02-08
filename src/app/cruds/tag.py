@@ -81,10 +81,13 @@ class TagCrud:
             db.add(db_tag)
             db.commit()
             db.refresh(db_tag)
-        except Exception as e:
+        except Exception:
             logger.error("Failed insertion of new tag to db")
             db.rollback()
-            raise e
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed insertion of new tag to db"
+            )
 
         logger.info({
             "action": "create new tag object",
@@ -114,10 +117,13 @@ class TagCrud:
             if new_tag.slug:
                 db_tag.slug = new_tag.slug
             db.commit()
-        except Exception as e:
+        except Exception:
             logger.error(f"Failed update tag with title: {new_tag.title} and slug: {new_tag.slug}")
             db.rollback()
-            raise e
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed update tag object"
+            )
 
         logger.info({
             "action": "Update tag object",
@@ -144,10 +150,13 @@ class TagCrud:
         try:
             db.delete(db_tag)
             db.commit()
-        except Exception as e:
+        except Exception:
             logger.error("Delete tag object has failed")
             db.rollback()
-            raise e
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Delete tag object has failed"
+            )
 
         if self.get_tag(tag_id, db):
             logger.warning("Delete process is done but the object has not deleted")

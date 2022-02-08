@@ -1,4 +1,5 @@
 from uuid import UUID
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from models import admin as model
 from schemas import admin as schema
@@ -90,10 +91,13 @@ class AdminCrud:
             if new_data.email:
                 current_admin.email = new_data.email
             db.commit()
-        except Exception as e:
+        except Exception:
             logger.error("Failed update admin user")
             db.rollback()
-            raise e
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed update admin user"
+            )
 
         logger.info({
             "action": "update admin from db",

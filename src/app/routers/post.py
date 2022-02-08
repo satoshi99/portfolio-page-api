@@ -1,4 +1,5 @@
-from fastapi import APIRouter, status, HTTPException, Depends, Request
+from fastapi import APIRouter, status, HTTPException, Depends, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi_csrf_protect import CsrfProtect
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -20,8 +21,21 @@ auth = AuthJwtCsrf()
 
 
 @router.get("", status_code=status.HTTP_200_OK, response_model=List[post_schema.Post])
-async def get_posts(db: Session = Depends(get_db)):
-    posts = crud.get_posts(db)
+async def get_my_posts(
+        response: Response,
+        current_admin: admin_schema.Admin = Depends(get_current_admin),
+        db: Session = Depends(get_db)
+):
+    new_token = auth.create_access_token({"sub": jsonable_encoder(current_admin.id)})
+    response.set_cookie(
+        key="access_token", value=f"Bearer {new_token}", httponly=True
+    )
+    return crud.get_my_posts(current_admin.id, db)
+
+
+@router.get("/public", status_code=status.HTTP_200_OK, response_model=List[post_schema.PostPublic])
+async def get_public_posts(db: Session = Depends(get_db)):
+    posts = crud.get_public_posts(db)
     return posts
 
 

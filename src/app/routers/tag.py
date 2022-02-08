@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi_csrf_protect import CsrfProtect
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -41,37 +42,52 @@ async def get_tag_with_posts(tag_id: UUID, db: Session = Depends(get_db)):
 async def create_tag(
         new_tag: tag_schema.TagCreate,
         request: Request,
+        response: Response,
         csrf_protect: CsrfProtect = Depends(),
         current_admin: admin_schema.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
     auth.verify_csrf(request, csrf_protect)
+    new_token = auth.create_access_token({"sub": jsonable_encoder(current_admin.id)})
+    response.set_cookie(
+        key="access_token", value=f"Bearer {new_token}", httponly=True
+    )
     return crud.create_tag(new_tag, db)
 
 
 @router.put("/{tag_id}", status_code=status.HTTP_200_OK, response_model=tag_schema.Tag)
-async def update_post(
+async def update_tag(
         tag_id: UUID,
         new_tag: tag_schema.TagUpdate,
         request: Request,
+        response: Response,
         csrf_protect: CsrfProtect = Depends(),
         current_admin: admin_schema.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
     auth.verify_csrf(request, csrf_protect)
+    new_token = auth.create_access_token({"sub": jsonable_encoder(current_admin.id)})
+    response.set_cookie(
+        key="access_token", value=f"Bearer {new_token}", httponly=True
+    )
     return crud.update_tag(tag_id, new_tag, db)
 
 
 @router.delete("{tag_id}", status_code=status.HTTP_200_OK, response_model=ResponseMsg)
-async def delete_post(
+async def delete_tag(
         tag_id: UUID,
         request: Request,
+        response: Response,
         csrf_protect: CsrfProtect = Depends(),
         current_admin: admin_schema.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
     auth.verify_csrf(request, csrf_protect)
+    new_token = auth.create_access_token({"sub": jsonable_encoder(current_admin.id)})
     result = crud.delete_tag(tag_id, db)
+    response.set_cookie(
+        key="access_token", value=f"Bearer {new_token}", httponly=True
+    )
     if result:
         return {"message": "Successfully Tag Deleted"}
     else:

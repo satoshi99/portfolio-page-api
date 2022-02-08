@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from uuid import UUID
+from datetime import datetime
 
 from .tag import Tag
 
@@ -32,7 +33,13 @@ class PostInDBBase(PostBase):
 
 
 class Post(PostInDBBase):
+    created_at: datetime
+    updated_at: datetime
     tags: Optional[List[Tag]]
+
+
+class PostPublic(Post):
+    is_public: bool = True
 
 
 class PostInDB(PostInDBBase):

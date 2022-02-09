@@ -1,4 +1,4 @@
-from decouple import config
+from decouple import config, Csv
 
 API_TITLE = "Portfolio site"
 API_VERSION = "1.0.0"
@@ -14,3 +14,7 @@ JWT_SECRET_KEY = config('JWT_SECRET_KEY')
 ALGORITHM = config('ALGORITHM', cast=str)
 JWT_EXPIRE_MINUTES = config('JWT_EXPIRE_MINUTES', cast=int)
 JWT_NOT_BEFORE_SECONDS = config('JWT_NOT_BEFORE_SECONDS', cast=int)
+
+CORS_ORIGIN_WHITELIST = config("CORS_ORIGIN_WHITELIST", cast=Csv())
+
+SECRET_SALT = config("SECRET_SALT", cast=str)

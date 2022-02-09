@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List, Union
 from uuid import UUID
 from models import Tag
-from schemas import tag as schema
+from schemas import tag_schema
+from .domain import update_process
 from .domain.transformer import slug_transformer
-from .domain.update_process import UpdateProcess
 
 from utils.logger import setup_logger
 import datetime
@@ -15,8 +15,6 @@ logger = setup_logger(log_folder=log_folder, modname=__name__)
 
 
 class TagCrud:
-
-    update_process = UpdateProcess().update_tag
 
     def get_tags(self, db: Session) -> List[Tag]:
         logger.info({
@@ -67,7 +65,7 @@ class TagCrud:
 
         return db_tag
 
-    def create_tag(self, tag: schema.TagCreate, db: Session) -> Tag:
+    def create_tag(self, tag: tag_schema.TagCreate, db: Session) -> Tag:
         logger.info({
             "action": "create new tag object",
             "tag": f"{tag.title}, {tag.slug}",
@@ -95,7 +93,7 @@ class TagCrud:
         })
         return db_tag
 
-    def update_tag(self, tag_id: UUID, new_tag: schema.TagUpdate, db: Session) -> Tag:
+    def update_tag(self, tag_id: UUID, new_tag: tag_schema.TagUpdate, db: Session) -> Tag:
         logger.info({
             "action": "Update tag object",
             "tag_id": tag_id,
@@ -112,7 +110,7 @@ class TagCrud:
             )
 
         try:
-            db_tag = self.update_process(db_tag, new_tag)
+            db_tag = update_process(db_tag, new_tag)
             db.commit()
         except Exception as ex:
             logger.error(f"Failed update tag with title: {new_tag.title} and slug: {new_tag.slug}")

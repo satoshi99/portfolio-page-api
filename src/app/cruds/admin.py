@@ -1,10 +1,12 @@
 from uuid import UUID
-from sqlalchemy.orm import Session
-from models import admin as model
-from schemas import admin as schema
-from .domain.update_process import UpdateProcess
-from utils.logger import setup_logger
 import datetime
+
+from sqlalchemy.orm import Session
+
+from models import Admin
+from schemas import admin_schema
+from .domain import update_process
+from utils.logger import setup_logger
 from .domain.logging_utils import NoPasswordLogFilter
 
 
@@ -14,16 +16,14 @@ logger = setup_logger(log_folder=log_folder, log_filter=NoPasswordLogFilter(), m
 
 class AdminCrud:
 
-    update_process = UpdateProcess().update_admin
-
-    def get_admin_by_id(self, admin_id: UUID, db: Session) -> model.Admin:
+    def get_admin_by_id(self, admin_id: UUID, db: Session) -> Admin:
         logger.info({
             "action": "get admin model by id",
             "admin_id": admin_id,
             "status": "run"
         })
 
-        db_admin = db.query(model.Admin).filter(model.Admin.id == admin_id).first()
+        db_admin = db.query(Admin).filter(Admin.id == admin_id).first()
 
         logger.info({
             "action": "get admin model by id",
@@ -32,13 +32,13 @@ class AdminCrud:
 
         return db_admin
 
-    def get_admin_by_email(self, email: str, db: Session) -> model.Admin:
+    def get_admin_by_email(self, email: str, db: Session) -> Admin:
         logger.info({
             "action": "get admin model by email",
             "status": "run"
         })
 
-        db_admin = db.query(model.Admin).filter(model.Admin.email == email).first()
+        db_admin = db.query(Admin).filter(Admin.email == email).first()
 
         logger.info({
             "action": "get admin model by email",
@@ -47,14 +47,14 @@ class AdminCrud:
 
         return db_admin
 
-    def create_admin(self, email: str, hashed_password: str, db: Session) -> model.Admin:
+    def create_admin(self, email: str, hashed_password: str, db: Session) -> Admin:
         logger.info({
             "action": "insert new admin to db",
             "status": "run"
         })
 
         try:
-            db_admin = model.Admin(email=email, hashed_password=hashed_password)
+            db_admin = Admin(email=email, hashed_password=hashed_password)
             db.add(db_admin)
             db.commit()
             db.refresh(db_admin)
@@ -70,7 +70,7 @@ class AdminCrud:
 
         return db_admin
 
-    def update_admin(self, current_admin: model.Admin, new_admin: schema.AdminUpdate, db: Session) -> model.Admin:
+    def update_admin(self, current_admin: Admin, new_admin: admin_schema.AdminUpdate, db: Session) -> Admin:
         logger.info({
             "action": "update admin from db",
             "current_admin": current_admin.id,
@@ -78,7 +78,7 @@ class AdminCrud:
         })
 
         try:
-            db_admin = self.update_process(current_admin, new_admin)
+            db_admin = update_process(current_admin, new_admin)
             db.commit()
         except Exception as ex:
             logger.error("Failed update admin user")
@@ -92,7 +92,7 @@ class AdminCrud:
 
         return db_admin
 
-    def delete_admin(self, current_admin: model.Admin, db: Session) -> bool:
+    def delete_admin(self, current_admin: Admin, db: Session) -> bool:
         logger.info({
             "action": "delete admin from db",
             "current_admin": current_admin.id,

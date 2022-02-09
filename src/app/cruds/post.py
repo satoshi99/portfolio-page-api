@@ -1,13 +1,13 @@
-from sqlalchemy import desc
-from sqlalchemy.orm import Session
-
 from typing import List
 from uuid import UUID
 
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
+
 from models import Post
-from schemas import post as post_schema
+from schemas import post_schema
+from .domain import update_process
 from .domain.transformer import slug_transformer
-from .domain.update_process import UpdateProcess
 from utils.logger import setup_logger
 import datetime
 
@@ -16,8 +16,6 @@ logger = setup_logger(log_folder=log_folder, modname=__name__)
 
 
 class PostCrud:
-
-    update_process = UpdateProcess().update_post
 
     def get_my_posts(self, admin_id: UUID, db: Session) -> List[Post]:
         logger.info({
@@ -108,7 +106,7 @@ class PostCrud:
             "status": "Run"
         })
         try:
-            db_post = self.update_process(db_post, new_post)
+            db_post = update_process(db_post, new_post)
             db.commit()
 
         except Exception as e:

@@ -10,12 +10,13 @@ from schemas import admin as admin_schema
 from schemas.common import ResponseMsg
 from cruds.post import PostCrud
 from .admin import get_current_admin
-from cruds.domain.update_map_post_tag import update_map_post_and_tags
-from cruds.domain.transformer import slug_transformer
+from cruds.domain.map_post_tags import MapPostAndTags
 from auth import AuthJwtCsrf
 
 router = APIRouter(prefix="/posts")
+
 crud = PostCrud()
+map_post_tags = MapPostAndTags()
 auth = AuthJwtCsrf()
 
 
@@ -38,6 +39,11 @@ async def get_public_posts(db: Session = Depends(get_db)):
 @router.get("/{post_id}", status_code=status.HTTP_200_OK, response_model=post_schema.Post)
 async def get_post(post_id: UUID, db: Session = Depends(get_db)):
     post = crud.get_post(post_id, db)
+    if not post:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found"
+        )
     return post
 
 
@@ -53,12 +59,9 @@ async def create_post(
 ):
     auth.verify_csrf(request, csrf_protect)
     auth.update_jwt(current_admin.id, response)
-    if not data.url_slug:
-        data = data.copy()
-        data.url_slug = slug_transformer(data.title)
     db_post = crud.create_post(current_admin.id, data, db)
     if tags:
-        db_post = crud.create_map_post_and_tags(tags, db_post, db)
+        db_post = map_post_tags.create_map(tags, db_post, db)
     return db_post
 
 
@@ -85,9 +88,9 @@ async def update_post(
     db_post = crud.update_post(db_post[0], data, db)
 
     if tags and not db_post.tags:
-        db_post = crud.create_map_post_and_tags(tags, db_post, db)
+        db_post = map_post_tags.create_map(tags, db_post, db)
     elif tags:
-        db_post = update_map_post_and_tags(tags, db_post, db)
+        db_post = map_post_tags.update_map(tags, db_post, db)
     return db_post
 
 

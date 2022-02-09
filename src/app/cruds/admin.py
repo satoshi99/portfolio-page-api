@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from models import Admin
 from schemas import admin_schema
 from .domain import update_process
+from services import auth_service
 from utils.logger import setup_logger
 from .domain.logging_utils import NoPasswordLogFilter
 
@@ -47,14 +48,20 @@ class AdminCrud:
 
         return db_admin
 
-    def create_admin(self, email: str, hashed_password: str, db: Session) -> Admin:
+    def create_admin(self, new_admin: admin_schema.AdminCreate, db: Session) -> Admin:
         logger.info({
             "action": "insert new admin to db",
             "status": "run"
         })
 
+        admin_password_hash = auth_service.create_salt_and_hashed_password(new_admin.password)
+
         try:
-            db_admin = Admin(email=email, hashed_password=hashed_password)
+            db_admin = Admin(
+                email=new_admin.email,
+                hashed_password=admin_password_hash.hashed_password,
+                salt=admin_password_hash.salt
+            )
             db.add(db_admin)
             db.commit()
             db.refresh(db_admin)

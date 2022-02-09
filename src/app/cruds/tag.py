@@ -5,6 +5,7 @@ from uuid import UUID
 from models import Tag
 from schemas import tag as schema
 from .domain.transformer import slug_transformer
+from .domain.update_process import UpdateProcess
 
 from utils.logger import setup_logger
 import datetime
@@ -15,8 +16,9 @@ logger = setup_logger(log_folder=log_folder, modname=__name__)
 
 class TagCrud:
 
-    @staticmethod
-    def get_tags(db: Session) -> List[Tag]:
+    update_process = UpdateProcess().update_tag
+
+    def get_tags(self, db: Session) -> List[Tag]:
         logger.info({
             "action": "get all tags",
             "status": "run"
@@ -31,8 +33,7 @@ class TagCrud:
 
         return tags
 
-    @staticmethod
-    def get_tag(tag_id: UUID, db: Session) -> Tag:
+    def get_tag(self, tag_id: UUID, db: Session) -> Tag:
         logger.info({
             "action": "get tag by id",
             "tag_id": tag_id,
@@ -48,8 +49,7 @@ class TagCrud:
 
         return db_tag
 
-    @staticmethod
-    def get_tag_by_title(tag_title: str, db: Session) -> Union[Tag, bool]:
+    def get_tag_by_title(self, tag_title: str, db: Session) -> Union[Tag, bool]:
         logger.info({
             "action": "get tag by title",
             "tag_id": tag_title,
@@ -67,8 +67,7 @@ class TagCrud:
 
         return db_tag
 
-    @staticmethod
-    def create_tag(tag: schema.TagCreate, db: Session) -> Tag:
+    def create_tag(self, tag: schema.TagCreate, db: Session) -> Tag:
         logger.info({
             "action": "create new tag object",
             "tag": f"{tag.title}, {tag.slug}",
@@ -113,18 +112,12 @@ class TagCrud:
             )
 
         try:
-            if new_tag.title:
-                db_tag.title = new_tag.title
-            if new_tag.slug:
-                db_tag.slug = new_tag.slug
+            db_tag = self.update_process(db_tag, new_tag)
             db.commit()
-        except Exception:
+        except Exception as ex:
             logger.error(f"Failed update tag with title: {new_tag.title} and slug: {new_tag.slug}")
             db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed update tag object"
-            )
+            raise ex
 
         logger.info({
             "action": "Update tag object",

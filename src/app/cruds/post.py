@@ -1,4 +1,3 @@
-from fastapi import HTTPException, status
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
@@ -7,9 +6,8 @@ from uuid import UUID
 
 from models import Post
 from schemas import post as post_schema
-from schemas import tag as tag_schema
-from cruds.tag import TagCrud
-
+from .domain.transformer import slug_transformer
+from .domain.update_process import UpdateProcess
 from utils.logger import setup_logger
 import datetime
 
@@ -17,13 +15,11 @@ log_folder = f"log/{datetime.date.today()}.log"
 logger = setup_logger(log_folder=log_folder, modname=__name__)
 
 
-tag_crud = TagCrud()
-
-
 class PostCrud:
 
-    @staticmethod
-    def get_my_posts(admin_id: UUID, db: Session) -> List[Post]:
+    update_process = UpdateProcess().update_post
+
+    def get_my_posts(self, admin_id: UUID, db: Session) -> List[Post]:
         logger.info({
             "action": "Get my posts",
             "admin_id": admin_id,
@@ -49,8 +45,7 @@ class PostCrud:
 
         return posts
 
-    @staticmethod
-    def get_public_posts(db: Session) -> List[Post]:
+    def get_public_posts(self, db: Session) -> List[Post]:
         logger.info({
             "action": "Get public posts",
             "status": "Run"
@@ -75,8 +70,7 @@ class PostCrud:
 
         return posts
 
-    @staticmethod
-    def get_post(post_id: UUID, db: Session) -> Post:
+    def get_post(self, post_id: UUID, db: Session) -> Post:
         logger.info({
             "action": "Get post by id",
             "post_id": post_id,
@@ -96,37 +90,25 @@ class PostCrud:
 
         return post
 
-    @staticmethod
-    def create_post(admin_id: UUID, data: post_schema.PostCreate, db: Session) -> Post:
+    def create_post(self, admin_id: UUID, data: post_schema.PostCreate, db: Session) -> Post:
+        if not data.url_slug:
+            data = data.copy()
+            data.url_slug = slug_transformer(data.title)
+
         new_post = Post(**data.dict(), author_id=admin_id)
         db.add(new_post)
         db.commit()
         db.refresh(new_post)
         return new_post
 
-    @staticmethod
-    def update_post(db_post: Post, data: post_schema.PostUpdate, db: Session) -> Post:
+    def update_post(self, db_post: Post, new_post: post_schema.PostUpdate, db: Session) -> Post:
         logger.info({
             "action": "Update post",
-            "data": data.is_public,
+            "data": new_post.is_public,
             "status": "Run"
         })
         try:
-            if data.title:
-                db_post.title = data.title
-            if data.url_slug:
-                db_post.url_slug = data.url_slug
-            if data.thumbnail:
-                db_post.thumbnail = data.thumbnail
-            if data.description:
-                db_post.description = data.description
-            if data.content:
-                db_post.content = data.content
-            if data.is_public is not None:
-                logger.info({"action": "update is_public", "data": data.is_public})
-                db_post.is_public = data.is_public
-                logger.info({"action": "update is_public", "updated_data": db_post.is_public})
-
+            db_post = self.update_process(db_post, new_post)
             db.commit()
 
         except Exception as e:
@@ -134,33 +116,10 @@ class PostCrud:
 
         return db_post
 
-    @staticmethod
-    def delete_post(db_post: Post, db: Session):
+    def delete_post(self, db_post: Post, db: Session):
         try:
             db.delete(db_post)
             db.commit()
         except Exception as e:
             db.rollback()
             raise e
-
-    @staticmethod
-    def create_map_post_and_tags(tags: List[tag_schema.TagCreate], db_post: Post, db: Session) -> Post:
-        for tag in tags:
-            db_tag = tag_crud.get_tag_by_title(tag.title, db)
-            if db_tag:
-                db_post.tags.append(db_tag)
-            else:
-                new_tag = tag_crud.create_tag(tag, db)
-                db_post.tags.append(new_tag)
-
-        db.commit()
-        return db_post
-
-    @staticmethod
-    def delete_map_post_and_tags(tags: List[tag_schema.TagUpdate], db_post: Post, db: Session):
-        for tag in tags:
-            db_tag = tag_crud.get_tag_by_title(tag.title, db)
-            db_post.tags.remove(db_tag)
-        db.commit()
-        return db_post
-

@@ -1,9 +1,8 @@
 from uuid import UUID
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from models import admin as model
 from schemas import admin as schema
-
+from .domain.update_process import UpdateProcess
 from utils.logger import setup_logger
 import datetime
 from .domain.logging_utils import NoPasswordLogFilter
@@ -15,8 +14,9 @@ logger = setup_logger(log_folder=log_folder, log_filter=NoPasswordLogFilter(), m
 
 class AdminCrud:
 
-    @staticmethod
-    def get_admin_by_id(admin_id: UUID, db: Session) -> model.Admin:
+    update_process = UpdateProcess().update_admin
+
+    def get_admin_by_id(self, admin_id: UUID, db: Session) -> model.Admin:
         logger.info({
             "action": "get admin model by id",
             "admin_id": admin_id,
@@ -32,8 +32,7 @@ class AdminCrud:
 
         return db_admin
 
-    @staticmethod
-    def get_admin_by_email(email: str, db: Session) -> model.Admin:
+    def get_admin_by_email(self, email: str, db: Session) -> model.Admin:
         logger.info({
             "action": "get admin model by email",
             "status": "run"
@@ -48,8 +47,7 @@ class AdminCrud:
 
         return db_admin
 
-    @staticmethod
-    def create_admin(email: str, hashed_password: str, db: Session) -> model.Admin:
+    def create_admin(self, email: str, hashed_password: str, db: Session) -> model.Admin:
         logger.info({
             "action": "insert new admin to db",
             "status": "run"
@@ -72,8 +70,7 @@ class AdminCrud:
 
         return db_admin
 
-    @staticmethod
-    def update_admin(current_admin: model.Admin, new_data: schema.AdminUpdate, db: Session) -> model.Admin:
+    def update_admin(self, current_admin: model.Admin, new_admin: schema.AdminUpdate, db: Session) -> model.Admin:
         logger.info({
             "action": "update admin from db",
             "current_admin": current_admin.id,
@@ -81,23 +78,19 @@ class AdminCrud:
         })
 
         try:
-            if new_data.email:
-                current_admin.email = new_data.email
+            db_admin = self.update_process(current_admin, new_admin)
             db.commit()
-        except Exception:
+        except Exception as ex:
             logger.error("Failed update admin user")
             db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed update admin user"
-            )
+            raise ex
 
         logger.info({
             "action": "update admin from db",
             "status": "success"
         })
 
-        return current_admin
+        return db_admin
 
     def delete_admin(self, current_admin: model.Admin, db: Session) -> bool:
         logger.info({

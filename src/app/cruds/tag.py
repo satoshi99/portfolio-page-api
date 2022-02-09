@@ -24,7 +24,7 @@ class TagCrud:
             "status": "run"
         })
 
-        tags = db.query(Tag).all()
+        tags = db.query(Tag).order_by(Tag.title).all()
 
         logger.info({
             "action": "get all tags",

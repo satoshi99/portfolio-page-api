@@ -2,33 +2,36 @@ from datetime import datetime, timedelta
 import uuid
 from uuid import UUID
 
-import bcrypt
 from fastapi import HTTPException, status, Request, Response
 from fastapi.encoders import jsonable_encoder
-from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi_csrf_protect import CsrfProtect
 
-from cruds.admin import AdminCrud
-from env import JWT_SECRET_KEY, JWT_EXPIRE_MINUTES, JWT_NOT_BEFORE_SECONDS, ALGORITHM
+import bcrypt
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+
+from schemas import admin_schema
+from env import JWT_SECRET_KEY, JWT_EXPIRE_MINUTES, JWT_NOT_BEFORE_SECONDS, ALGORITHM, SECRET_SALT
 
 
-class AuthJwtCsrf:
-    admin_crud = AdminCrud()
+class AuthService:
+
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     def verify_csrf(self, request: Request, csrf_protect: CsrfProtect) -> None:
         csrf_token = csrf_protect.get_csrf_from_headers(request.headers)
         csrf_protect.validate_csrf(csrf_token)
 
-    def verify_password(self, plain_password, hashed_password) -> bool:
-        return self.pwd_context.verify(plain_password, hashed_password)
+    def verify_password(self, plain_password: str, salt: str, hashed_password: str) -> bool:
+        return self.pwd_context.verify(plain_password + salt + SECRET_SALT, hashed_password)
 
-    def get_password_hash(self, password) -> str:
-        return self.pwd_context.hash(password)
+    def get_password_hash(self, password: str, salt: str) -> str:
+        return self.pwd_context.hash(password + salt + SECRET_SALT)
 
-    def generate_salt(self) -> str:
-        return bcrypt.gensalt().decode()
+    def create_salt_and_hashed_password(self, password: str) -> admin_schema.AdminPasswordHash:
+        salt = bcrypt.gensalt().decode()
+        hashed_password = self.get_password_hash(password, salt)
+        return admin_schema.AdminPasswordHash(hashed_password=hashed_password, salt=salt)
 
     def create_access_token(self, data: dict) -> str:
         to_encode = data.copy()

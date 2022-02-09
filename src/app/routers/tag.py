@@ -1,25 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
-from fastapi_csrf_protect import CsrfProtect
-from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import List, Union
-from schemas import tag as tag_schema
-from schemas import admin as admin_schema
-from schemas import post as post_schema
-from schemas.common import ResponseMsg
-from cruds.tag import TagCrud
+
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from fastapi_csrf_protect import CsrfProtect
+
+from sqlalchemy.orm import Session
+
+from schemas import tag_schema, admin_schema, post_schema, ResponseMsg
+from cruds import tag_crud
 from database import get_db
+from services import auth_service
 from .admin import get_current_admin
-from auth import AuthJwtCsrf
 
 router = APIRouter(prefix="/tags")
-crud = TagCrud()
-auth = AuthJwtCsrf()
 
 
 @router.get("", status_code=status.HTTP_200_OK, response_model=Union[List[tag_schema.Tag], ResponseMsg])
 async def get_tags(db: Session = Depends(get_db)):
-    tags = crud.get_tags(db)
+    tags = tag_crud.get_tags(db)
     if not tags:
         return {"message": "No registered tags"}
 
@@ -28,7 +26,7 @@ async def get_tags(db: Session = Depends(get_db)):
 
 @router.get("/{tag_id}", status_code=status.HTTP_200_OK, response_model=post_schema.TagWithPosts)
 async def get_tag_with_posts(tag_id: UUID, db: Session = Depends(get_db)):
-    tag = crud.get_tag(tag_id, db)
+    tag = tag_crud.get_tag(tag_id, db)
     if not tag:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -46,9 +44,9 @@ async def create_tag(
         current_admin: admin_schema.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
-    auth.verify_csrf(request, csrf_protect)
-    auth.update_jwt(current_admin.id, response)
-    return crud.create_tag(new_tag, db)
+    auth_service.verify_csrf(request, csrf_protect)
+    auth_service.update_jwt(current_admin.id, response)
+    return tag_crud.create_tag(new_tag, db)
 
 
 @router.put("/{tag_id}", status_code=status.HTTP_200_OK, response_model=tag_schema.Tag)
@@ -61,9 +59,9 @@ async def update_tag(
         current_admin: admin_schema.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
-    auth.verify_csrf(request, csrf_protect)
-    auth.update_jwt(current_admin.id, response)
-    return crud.update_tag(tag_id, new_tag, db)
+    auth_service.verify_csrf(request, csrf_protect)
+    auth_service.update_jwt(current_admin.id, response)
+    return tag_crud.update_tag(tag_id, new_tag, db)
 
 
 @router.delete("{tag_id}", status_code=status.HTTP_200_OK, response_model=ResponseMsg)
@@ -75,9 +73,9 @@ async def delete_tag(
         current_admin: admin_schema.Admin = Depends(get_current_admin),
         db: Session = Depends(get_db)
 ):
-    auth.verify_csrf(request, csrf_protect)
-    auth.update_jwt(current_admin.id, response)
-    result = crud.delete_tag(tag_id, db)
+    auth_service.verify_csrf(request, csrf_protect)
+    auth_service.update_jwt(current_admin.id, response)
+    result = tag_crud.delete_tag(tag_id, db)
     if result:
         return {"message": "Successfully Tag Deleted"}
     else:

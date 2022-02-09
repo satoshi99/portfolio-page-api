@@ -4,20 +4,13 @@ from sqlalchemy.orm import Session
 from models import admin as model
 from schemas import admin as schema
 
-import logging
-from logging import LogRecord
+from utils.logger import setup_logger
+import datetime
+from .domain.logging_utils import NoPasswordLogFilter
 
 
-class NoPasswordLogFilter(logging.Filter):
-    def filter(self, record: LogRecord) -> bool:
-        message = record.getMessage()
-        return "password" not in message
-
-
-logger = logging.getLogger(__name__)
-log_file = logging.FileHandler("log/crud_admin.log")
-logger.addHandler(log_file)
-logger.addFilter(NoPasswordLogFilter())
+log_folder = f"log/{datetime.date.today()}.log"
+logger = setup_logger(log_folder=log_folder, log_filter=NoPasswordLogFilter(), modname=__name__)
 
 
 class AdminCrud:

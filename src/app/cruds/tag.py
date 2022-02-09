@@ -4,12 +4,13 @@ from typing import List, Union
 from uuid import UUID
 from models import Tag
 from schemas import tag as schema
-import logging
 from .domain.transformer import slug_transformer
 
-logger = logging.getLogger(__name__)
-log_file = logging.FileHandler("log/crud_tag.log")
-logger.addHandler(log_file)
+from utils.logger import setup_logger
+import datetime
+
+log_folder = f"log/{datetime.date.today()}.log"
+logger = setup_logger(log_folder=log_folder, modname=__name__)
 
 
 class TagCrud:

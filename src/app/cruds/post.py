@@ -14,7 +14,7 @@ from utils.logger import setup_logger
 import datetime
 
 log_folder = f"log/{datetime.date.today()}.log"
-logger = setup_logger(log_folder)
+logger = setup_logger(log_folder=log_folder, modname=__name__)
 
 
 tag_crud = TagCrud()

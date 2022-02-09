@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 import uuid
 from uuid import UUID
+
+import bcrypt
 from fastapi import HTTPException, status, Request, Response
 from fastapi.encoders import jsonable_encoder
 from jose import JWTError, jwt
@@ -15,8 +17,7 @@ class AuthJwtCsrf:
     admin_crud = AdminCrud()
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-    @staticmethod
-    def verify_csrf(request: Request, csrf_protect: CsrfProtect) -> None:
+    def verify_csrf(self, request: Request, csrf_protect: CsrfProtect) -> None:
         csrf_token = csrf_protect.get_csrf_from_headers(request.headers)
         csrf_protect.validate_csrf(csrf_token)
 
@@ -26,8 +27,10 @@ class AuthJwtCsrf:
     def get_password_hash(self, password) -> str:
         return self.pwd_context.hash(password)
 
-    @staticmethod
-    def create_access_token(data: dict) -> str:
+    def generate_salt(self) -> str:
+        return bcrypt.gensalt().decode()
+
+    def create_access_token(self, data: dict) -> str:
         to_encode = data.copy()
         to_encode.update({
             "exp": datetime.utcnow() + timedelta(minutes=JWT_EXPIRE_MINUTES),
@@ -38,8 +41,7 @@ class AuthJwtCsrf:
         })
         return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
 
-    @staticmethod
-    def decode_jwt(token: str) -> UUID:
+    def decode_jwt(self, token: str) -> UUID:
         try:
             payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=ALGORITHM)
             user_id: UUID = payload.get("sub")

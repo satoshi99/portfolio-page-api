@@ -14,7 +14,6 @@ class Admin(Base, TimestampMixin):
     id = Column(UUIDType(binary=False), primary_key=True, default=uuid4)
     email = Column(String(255), nullable=False, unique=True)
     email_verified = Column(Boolean, nullable=False, default=False)
-    salt = Column(String(255), nullable=False)
     hashed_password = Column(String(255), nullable=False, unique=True)
-    is_active = Column(Boolean, nullable=False, default=True)
+    is_active = Column(Boolean, nullable=False, default=False)
     posts = relationship("Post", backref="admin")

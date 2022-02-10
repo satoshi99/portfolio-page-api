@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -20,15 +22,33 @@ async def get_current_admin(
         token: str = Depends(oauth2_scheme),
         db: Session = Depends(get_db)
 ) -> Admin:
-    admin_id = auth_service.decode_jwt(token)
-    db_admin = admin_crud.get_admin_by_id(admin_id, db)
-    if not db_admin:
+    try:
+        admin_id = auth_service.decode_jwt(token)
+        db_admin = admin_crud.get_admin_by_id(admin_id, db)
+    except Exception as ex:
+        raise ex
+
+    return db_admin
+
+
+async def get_current_active_admin(
+        current_admin: admin_schema.Admin = Depends(get_current_admin)
+) -> Admin:
+    if not current_admin:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Admin user not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return db_admin
+
+    if not current_admin.is_active or not current_admin.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not an active user.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return current_admin
 
 
 @router.get("/csrftoken", response_model=auth_schema.Csrf)
@@ -38,7 +58,7 @@ def get_csrf_token(csrf_protect: CsrfProtect = Depends()):
 
 
 @router.post("/create", status_code=status.HTTP_201_CREATED, response_model=admin_schema.Admin)
-async def create_admin(
+async def create_admin_temporary(
         new_admin: admin_schema.AdminCreate,
         request: Request,
         csrf_protect: CsrfProtect = Depends(),
@@ -53,6 +73,24 @@ async def create_admin(
     return admin_crud.create_admin(new_admin, db)
 
 
+@router.post("/verify-email/{admin_id}", status_code=status.HTTP_201_CREATED, response_model=admin_schema.Admin)
+async def verify_email_and_register_admin(
+        admin_id: UUID,
+        request: Request,
+        csrf_protect: CsrfProtect = Depends(),
+        db: Session = Depends(get_db)
+):
+    auth_service.verify_csrf(request, csrf_protect)
+    db_admin = admin_crud.get_admin_by_id(admin_id, db)
+    if not db_admin:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Admin user not found by request id",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return admin_crud.activate_admin(db_admin, db)
+
+
 @router.post("/token", status_code=status.HTTP_201_CREATED, response_model=auth_schema.Token)
 async def login_for_access_token(
         response: Response,
@@ -63,7 +101,7 @@ async def login_for_access_token(
 ):
     auth_service.verify_csrf(request, csrf_protect)
     db_admin = admin_crud.get_admin_by_email(form_data.username, db)
-    if not db_admin or not auth_service.verify_password(form_data.password, db_admin.salt, db_admin.hashed_password):
+    if not db_admin or not auth_service.verify_password(form_data.password, db_admin.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -83,7 +121,7 @@ async def logout(response: Response, request: Request, csrf_protect: CsrfProtect
 
 
 @router.get("/myinfo", status_code=status.HTTP_200_OK, response_model=admin_schema.Admin)
-async def get_admin(response: Response, current_admin: Admin = Depends(get_current_admin)):
+async def get_admin(response: Response, current_admin: Admin = Depends(get_current_active_admin)):
     auth_service.update_jwt(current_admin.id, response)
     return current_admin
 
@@ -94,7 +132,7 @@ async def update_admin(
         request: Request,
         response: Response,
         csrf_protect: CsrfProtect = Depends(),
-        current_admin: Admin = Depends(get_current_admin),
+        current_admin: Admin = Depends(get_current_active_admin),
         db: Session = Depends(get_db)
 ):
     auth_service.verify_csrf(request, csrf_protect)
@@ -102,11 +140,49 @@ async def update_admin(
     return admin_crud.update_admin(current_admin, new_data, db)
 
 
+@router.put("/update-password", status_code=status.HTTP_200_OK, response_model=ResponseMsg)
+async def update_password_admin(
+        password_data: admin_schema.PasswordUpdate,
+        request: Request,
+        response: Response,
+        csrf_protect: CsrfProtect = Depends(),
+        current_admin: Admin = Depends(get_current_active_admin),
+        db: Session = Depends(get_db)
+):
+    auth_service.verify_csrf(request, csrf_protect)
+    if not auth_service.verify_password(password_data.current_password, current_admin.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect current password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    auth_service.update_jwt(current_admin.id, response)
+    if admin_crud.update_password(password_data.new_password, current_admin, db):
+        return {"message": "Successfully updated password"}
+    else:
+        return {"message": "Failed updated password"}
+
+
+@router.put("/reset-password", status_code=status.HTTP_200_OK, response_model=ResponseMsg)
+async def reset_password_admin(
+        new_admin: admin_schema.AdminCreate,
+        request: Request,
+        csrf_protect: CsrfProtect = Depends(),
+        db: Session = Depends(get_db)
+):
+    auth_service.verify_csrf(request, csrf_protect)
+    db_admin = admin_crud.get_admin_by_email(new_admin.email, db)
+    if admin_crud.update_password(new_admin.password, db_admin, db):
+        return {"message": "Successfully updated password"}
+    else:
+        return {"message": "Failed updated password"}
+
+
 @router.delete("/delete", status_code=status.HTTP_200_OK, response_model=ResponseMsg)
 async def delete_admin(
         request: Request,
         csrf_protect: CsrfProtect = Depends(),
-        current_admin: Admin = Depends(get_current_admin),
+        current_admin: Admin = Depends(get_current_active_admin),
         db: Session = Depends(get_db)
 ):
     auth_service.verify_csrf(request, csrf_protect)

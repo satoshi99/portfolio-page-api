@@ -11,8 +11,8 @@ from database import Base
 tag_post_map_table = Table(
     "tag_post_map",
     Base.metadata,
-    Column("tag_id", UUIDType(binary=False), ForeignKey("tags.id")),
-    Column("post_id", UUIDType(binary=False), ForeignKey("posts.id"))
+    Column("tag_id", UUIDType(binary=False), ForeignKey("tags.id", ondelete="CASCADE")),
+    Column("post_id", UUIDType(binary=False), ForeignKey("posts.id", ondelete="CASCADE"))
 )
 
 

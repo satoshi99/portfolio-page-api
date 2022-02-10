@@ -54,13 +54,12 @@ class AdminCrud:
             "status": "run"
         })
 
-        admin_password_hash = auth_service.create_salt_and_hashed_password(new_admin.password)
+        hashed_password = auth_service.get_password_hash(new_admin.password)
 
         try:
             db_admin = Admin(
                 email=new_admin.email,
-                hashed_password=admin_password_hash.hashed_password,
-                salt=admin_password_hash.salt
+                hashed_password=hashed_password,
             )
             db.add(db_admin)
             db.commit()
@@ -98,6 +97,28 @@ class AdminCrud:
         })
 
         return db_admin
+
+    def activate_admin(self, db_admin: Admin, db: Session) -> Admin:
+        try:
+            db_admin.email_verified = True
+            db_admin.is_active = True
+            db.commit()
+        except Exception as ex:
+            db.rollback()
+            raise ex
+
+        return db_admin
+
+    def update_password(self, password: str, db_admin: Admin, db: Session) -> bool:
+        try:
+            hashed_password = auth_service.get_password_hash(password)
+            db_admin.hashed_password = hashed_password
+            db.commit()
+        except Exception as ex:
+            db.rollback()
+            raise ex
+
+        return True
 
     def delete_admin(self, current_admin: Admin, db: Session) -> bool:
         logger.info({

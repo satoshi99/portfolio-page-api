@@ -17,5 +17,4 @@ class Admin(Base, TimestampMixin):
     salt = Column(String(255), nullable=False)
     hashed_password = Column(String(255), nullable=False, unique=True)
     is_active = Column(Boolean, nullable=False, default=True)
-    is_superuser = Column(Boolean, nullable=False, default=False)
     posts = relationship("Post", backref="admin")

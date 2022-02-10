@@ -9,23 +9,23 @@ class AdminBase(BaseModel):
 
 
 class AdminCreate(AdminBase):
-    password: constr(min_length=7, max_length=50)
+    password: constr(min_length=7, max_length=100)
 
 
 class AdminUpdate(AdminBase):
-    pass
+    email_verified: bool = False
+    is_active: bool = False
 
 
-class AdminPasswordHash(BaseModel):
-    hashed_password: str
-    salt: str
+class PasswordUpdate(BaseModel):
+    current_password: str
+    new_password: constr(min_length=7, max_length=100)
 
 
 class AdminInDBBase(AdminBase):
     id: UUID
     email_verified: bool = False
-    is_active: bool = True
-    is_superuser: bool = False
+    is_active: bool = False
 
     class Config:
         orm_mode = True
@@ -37,5 +37,3 @@ class Admin(AdminInDBBase):
 
 class AdminInDB(AdminInDBBase):
     hashed_password: str
-    salt: str
-

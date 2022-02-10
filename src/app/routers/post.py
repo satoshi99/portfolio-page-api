@@ -11,7 +11,7 @@ from schemas import post_schema, tag_schema, admin_schema, ResponseMsg
 from cruds import post_crud
 from cruds.domain import map_post_tags
 from services import auth_service
-from .admin import get_current_admin
+from .admin import get_current_active_admin
 
 router = APIRouter(prefix="/posts")
 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/posts")
 @router.get("", status_code=status.HTTP_200_OK, response_model=List[post_schema.Post])
 async def get_my_posts(
         response: Response,
-        current_admin: admin_schema.Admin = Depends(get_current_admin),
+        current_admin: admin_schema.Admin = Depends(get_current_active_admin),
         db: Session = Depends(get_db)
 ):
     auth_service.update_jwt(current_admin.id, response)
@@ -50,7 +50,7 @@ async def create_post(
         request: Request,
         response: Response,
         csrf_protect: CsrfProtect = Depends(),
-        current_admin: admin_schema.Admin = Depends(get_current_admin),
+        current_admin: admin_schema.Admin = Depends(get_current_active_admin),
         db: Session = Depends(get_db)
 ):
     auth_service.verify_csrf(request, csrf_protect)
@@ -69,7 +69,7 @@ async def update_post(
         request: Request,
         response: Response,
         csrf_protect: CsrfProtect = Depends(),
-        current_admin: admin_schema.Admin = Depends(get_current_admin),
+        current_admin: admin_schema.Admin = Depends(get_current_active_admin),
         db: Session = Depends(get_db)
 ):
     auth_service.verify_csrf(request, csrf_protect)
@@ -96,7 +96,7 @@ async def delete_post(
         request: Request,
         response: Response,
         csrf_protect: CsrfProtect = Depends(),
-        current_admin: admin_schema.Admin = Depends(get_current_admin),
+        current_admin: admin_schema.Admin = Depends(get_current_active_admin),
         db: Session = Depends(get_db)
 ):
     auth_service.verify_csrf(request, csrf_protect)

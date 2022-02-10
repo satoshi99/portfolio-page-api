@@ -10,7 +10,7 @@ from schemas import tag_schema, admin_schema, post_schema, ResponseMsg
 from cruds import tag_crud
 from database import get_db
 from services import auth_service
-from .admin import get_current_admin
+from .admin import get_current_active_admin
 
 router = APIRouter(prefix="/tags")
 
@@ -41,7 +41,7 @@ async def create_tag(
         request: Request,
         response: Response,
         csrf_protect: CsrfProtect = Depends(),
-        current_admin: admin_schema.Admin = Depends(get_current_admin),
+        current_admin: admin_schema.Admin = Depends(get_current_active_admin),
         db: Session = Depends(get_db)
 ):
     auth_service.verify_csrf(request, csrf_protect)
@@ -56,7 +56,7 @@ async def update_tag(
         request: Request,
         response: Response,
         csrf_protect: CsrfProtect = Depends(),
-        current_admin: admin_schema.Admin = Depends(get_current_admin),
+        current_admin: admin_schema.Admin = Depends(get_current_active_admin),
         db: Session = Depends(get_db)
 ):
     auth_service.verify_csrf(request, csrf_protect)
@@ -70,7 +70,7 @@ async def delete_tag(
         request: Request,
         response: Response,
         csrf_protect: CsrfProtect = Depends(),
-        current_admin: admin_schema.Admin = Depends(get_current_admin),
+        current_admin: admin_schema.Admin = Depends(get_current_active_admin),
         db: Session = Depends(get_db)
 ):
     auth_service.verify_csrf(request, csrf_protect)

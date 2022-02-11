@@ -12,7 +12,9 @@ from models import Admin
 from cruds import admin_crud
 from database import get_db
 from services import auth_service
-from env import API_PREFIX
+from utils.env import API_PREFIX
+
+from errors import error_responses, AlreadyRegisteredError, JwtExpiredSignatureError, UnauthorizedAdminError
 
 router = APIRouter(prefix="/admin")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{API_PREFIX}/admin/token")
@@ -22,11 +24,9 @@ async def get_current_admin(
         token: str = Depends(oauth2_scheme),
         db: Session = Depends(get_db)
 ) -> Admin:
-    try:
-        admin_id = auth_service.decode_jwt(token)
-        db_admin = admin_crud.get_admin_by_id(admin_id, db)
-    except Exception as ex:
-        raise ex
+
+    admin_id = auth_service.decode_jwt(token)
+    db_admin = admin_crud.get_admin_by_id(admin_id, db)
 
     return db_admin
 
@@ -51,13 +51,32 @@ async def get_current_active_admin(
     return current_admin
 
 
-@router.get("/csrftoken", response_model=auth_schema.Csrf)
+@router.get("/csrftoken", response_model=auth_schema.Csrf,
+            responses={
+                200: {"description": "CSRF Token Requested"},
+                400: {
+                    # "model": Errors,
+                    "description": "Bad Request",
+                    "content": {
+                        'application/json': {
+                            'example': {
+                                'detail': "The server cannot or will not process the request"
+                            }
+                        }
+                    }
+                }
+            }
+            )
 def get_csrf_token(csrf_protect: CsrfProtect = Depends()):
     csrf_token = csrf_protect.generate_csrf()
     return {"csrf_token": csrf_token}
 
 
-@router.post("/create", status_code=status.HTTP_201_CREATED, response_model=admin_schema.Admin)
+@router.post("/create", status_code=status.HTTP_201_CREATED, response_model=admin_schema.Admin,
+             responses={
+                 201: {"description": "Temporary Admin Created"},
+                 **error_responses([AlreadyRegisteredError])
+             })
 async def create_admin_temporary(
         new_admin: admin_schema.AdminCreate,
         request: Request,
@@ -66,10 +85,7 @@ async def create_admin_temporary(
 ):
     auth_service.verify_csrf(request, csrf_protect)
     if admin_crud.get_admin_by_email(new_admin.email, db):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
+        raise AlreadyRegisteredError(message="Requested Email already registered")
     return admin_crud.create_admin(new_admin, db)
 
 
@@ -120,7 +136,12 @@ async def logout(response: Response, request: Request, csrf_protect: CsrfProtect
     return {"message": "Successfully logged-out"}
 
 
-@router.get("/myinfo", status_code=status.HTTP_200_OK, response_model=admin_schema.Admin)
+@router.get("/myinfo", status_code=status.HTTP_200_OK, response_model=admin_schema.AdminWithPosts,
+            responses={
+                200: {"description": "Admin Requested with JWT Signature"},
+                **error_responses([JwtExpiredSignatureError, UnauthorizedAdminError])
+            }
+            )
 async def get_admin(response: Response, current_admin: Admin = Depends(get_current_active_admin)):
     auth_service.update_jwt(current_admin.id, response)
     return current_admin

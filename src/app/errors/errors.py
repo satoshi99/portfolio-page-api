@@ -4,7 +4,7 @@ from schemas import Errors
 
 class ApiException(Exception):
     status_code: int = 400
-    error_code: str = 'ApiError'
+    error_code: str = 'Api Error'
     headers: Dict = None
 
     def __init__(
@@ -14,9 +14,21 @@ class ApiException(Exception):
         self.message = message
 
 
+class BadRequestError(ApiException):
+    status_code = 400
+    error_code = 'Bad Request'
+
+    def __init__(
+            self,
+            message: str = 'The server cannot or will not process the request'
+    ):
+        super().__init__(message)
+        self.message = message
+
+
 class AlreadyRegisteredError(ApiException):
     status_code = 400
-    error_code = 'AlreadyRegistered'
+    error_code = 'Already Registered'
 
     def __init__(
             self,
@@ -28,7 +40,7 @@ class AlreadyRegisteredError(ApiException):
 
 class JwtExpiredSignatureError(ApiException):
     status_code = 401
-    error_code = 'ExpiredSignature'
+    error_code = 'Expired Signature'
     headers = {"WWW-Authenticate": "Bearer"}
 
     def __init__(
@@ -41,7 +53,7 @@ class JwtExpiredSignatureError(ApiException):
 
 class UnauthorizedAdminError(ApiException):
     status_code = 401
-    error_code = 'UnauthorizedAdmin'
+    error_code = 'Unauthorized Admin'
     headers = {"WWW-Authenticate": "Bearer"}
 
     def __init__(
@@ -54,11 +66,11 @@ class UnauthorizedAdminError(ApiException):
 
 class ObjectNotFoundError(ApiException):
     status_code = 404
-    detail = 'ObjectNotFound'
+    error_code = 'Object Not Found'
 
     def __init__(
             self,
-            message: str = 'Objects not found in DB'
+            message: str = 'Objects not found'
     ):
         super().__init__(message)
         self.message = message

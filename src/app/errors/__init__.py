@@ -4,4 +4,5 @@ from .errors import \
     AlreadyRegisteredError, \
     UnauthorizedAdminError, \
     JwtExpiredSignatureError, \
-    ObjectNotFoundError
+    ObjectNotFoundError, \
+    BadRequestError

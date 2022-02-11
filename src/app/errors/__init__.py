@@ -1,4 +1,5 @@
 from .errors import \
+    error_responses, \
     ApiException, \
     AlreadyRegisteredError, \
     UnauthorizedAdminError, \

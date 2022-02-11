@@ -8,7 +8,8 @@ from fastapi_csrf_protect.exceptions import CsrfProtectError
 
 from schemas.auth import CsrfSettings
 from routers import admin_router, post_router, tag_router
-from env import API_TITLE, API_VERSION, API_PREFIX, CORS_ORIGIN_WHITELIST
+from utils.env import API_TITLE, API_VERSION, API_PREFIX, CORS_ORIGIN_WHITELIST
+from errors import ApiException
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,4 +43,17 @@ def csrf_protect_exception_handler(request: Request, exc: CsrfProtectError):
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.message}
+    )
+
+
+@app.exception_handler(ApiException)
+async def api_exception_handler(request: Request, exc: ApiException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status": exc.status_code,
+            "code": exc.error_code,
+            "message": exc.message
+        },
+        headers=exc.headers
     )

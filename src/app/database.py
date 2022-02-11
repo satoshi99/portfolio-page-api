@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
-from env import DB_USER, DB_PASSWORD, DB_DATABASE, DB_HOST
+from utils.env import DB_USER, DB_PASSWORD, DB_DATABASE, DB_HOST
 
 DATABASE = f"mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_DATABASE}?charset=utf8"
 

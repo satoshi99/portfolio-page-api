@@ -32,6 +32,10 @@ class AdminInDBBase(AdminBase):
 
 
 class Admin(AdminInDBBase):
+    pass
+
+
+class AdminWithPosts(AdminInDBBase):
     posts: List[Post]
 
 

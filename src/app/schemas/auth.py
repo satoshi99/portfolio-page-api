@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Union, Optional
 from uuid import UUID
-from env import CSRF_SECRET_KEY
+from utils.env import CSRF_SECRET_KEY
 
 
 class CsrfSettings(BaseModel):

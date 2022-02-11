@@ -2,14 +2,15 @@ from datetime import datetime, timedelta
 import uuid
 from uuid import UUID
 
-from fastapi import HTTPException, status, Request, Response
+from fastapi import Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi_csrf_protect import CsrfProtect
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-from env import JWT_SECRET_KEY, JWT_EXPIRE_MINUTES, JWT_NOT_BEFORE_SECONDS, ALGORITHM
+from utils.env import JWT_SECRET_KEY, JWT_EXPIRE_MINUTES, JWT_NOT_BEFORE_SECONDS, ALGORITHM
+from errors import JwtExpiredSignatureError, UnauthorizedAdminError
 
 
 class AuthService:
@@ -43,21 +44,12 @@ class AuthService:
             user_id: UUID = payload.get("sub")
             return user_id
         except jwt.ExpiredSignatureError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="The JWT has expired"
-            )
+            raise JwtExpiredSignatureError()
         except JWTError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
-            )
+            raise UnauthorizedAdminError()
 
     def update_jwt(self, admin_id: UUID, response: Response) -> None:
-        try:
-            new_token = self.create_access_token({"sub": jsonable_encoder(admin_id)})
-            response.set_cookie(
-                key="access_token", value=f"Bearer {new_token}", httponly=True
-            )
-        except Exception as ex:
-            raise ex
+        new_token = self.create_access_token({"sub": jsonable_encoder(admin_id)})
+        response.set_cookie(
+            key="access_token", value=f"Bearer {new_token}", httponly=True
+        )

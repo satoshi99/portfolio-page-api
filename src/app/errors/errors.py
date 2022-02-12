@@ -70,7 +70,7 @@ class ObjectNotFoundError(ApiException):
 
     def __init__(
             self,
-            message: str = 'Objects not found'
+            message: str = 'The requested object was not found'
     ):
         super().__init__(message)
         self.message = message

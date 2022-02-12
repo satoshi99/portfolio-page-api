@@ -1,4 +1,3 @@
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Union
 from uuid import UUID
@@ -6,6 +5,7 @@ from models import Tag
 from schemas import tag_schema
 from .domain import update_process
 from .domain.transformer import slug_transformer
+from errors import ObjectNotFoundError, BadRequestError
 
 from utils.logger import setup_logger
 import datetime
@@ -82,10 +82,7 @@ class TagCrud:
         except Exception:
             logger.error("Failed insertion of new tag to db")
             db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed insertion of new tag to db"
-            )
+            raise BadRequestError(message="Failed insertion of new tag to db")
 
         logger.info({
             "action": "create new tag object",
@@ -104,10 +101,7 @@ class TagCrud:
         db_tag = self.get_tag(tag_id, db)
         if not db_tag:
             logger.error(f"Failed get tag by id: {tag_id} from db")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Tag Not Found"
-            )
+            raise ObjectNotFoundError(message="The Tag was not found by ID")
 
         try:
             db_tag = update_process(db_tag, new_tag)
@@ -134,10 +128,7 @@ class TagCrud:
         db_tag = self.get_tag(tag_id, db)
         if not db_tag:
             logger.error(f"Failed get tag by id: {tag_id} from db")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Tag Not Found"
-            )
+            raise ObjectNotFoundError(message="The Tag was not found by ID")
 
         try:
             db.delete(db_tag)
@@ -145,10 +136,7 @@ class TagCrud:
         except Exception:
             logger.error("Delete tag object has failed")
             db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Delete tag object has failed"
-            )
+            raise BadRequestError(message="Delete tag object has failed")
 
         if self.get_tag(tag_id, db):
             logger.warning("Delete process is done but the object has not deleted")

@@ -109,9 +109,9 @@ class AdminCrud:
 
         return db_admin
 
-    def update_password(self, password: str, db_admin: Admin, db: Session) -> bool:
+    def update_password(self, new_password: str, db_admin: Admin, db: Session) -> bool:
         try:
-            hashed_password = auth_service.get_password_hash(password)
+            hashed_password = auth_service.get_password_hash(new_password)
             db_admin.hashed_password = hashed_password
             db.commit()
         except Exception as ex:

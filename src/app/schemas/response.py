@@ -9,7 +9,7 @@ class ResponseMsg(BaseModel):
 class ErrorBody(BaseModel):
     status: int
     code: str
-    message: str
+    message: List[str]
 
 
 class Errors(BaseModel):

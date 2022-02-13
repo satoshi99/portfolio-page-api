@@ -9,7 +9,7 @@ from fastapi_csrf_protect.exceptions import CsrfProtectError
 from schemas.auth import CsrfSettings
 from routers import admin_router, post_router, tag_router
 from utils.env import API_TITLE, API_VERSION, API_PREFIX, CORS_ORIGIN_WHITELIST
-from errors import ApiException
+from exceptions import ApiException
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,7 +42,11 @@ def get_csrf_config():
 def csrf_protect_exception_handler(request: Request, exc: CsrfProtectError):
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.message}
+        content={
+            "status": exc.status_code,
+            "code": "Could Not Verify CSRF Token",
+            "message": exc.message
+        }
     )
 
 

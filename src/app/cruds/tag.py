@@ -5,7 +5,7 @@ from models import Tag
 from schemas import tag_schema
 from .domain import update_process
 from .domain.transformer import slug_transformer
-from errors import ObjectNotFoundError, BadRequestError
+from exceptions import ObjectNotFoundError, BadRequestError
 
 from utils.logger import setup_logger
 import datetime

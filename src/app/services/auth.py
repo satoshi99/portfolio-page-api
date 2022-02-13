@@ -10,7 +10,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from utils.env import JWT_SECRET_KEY, JWT_EXPIRE_MINUTES, JWT_NOT_BEFORE_SECONDS, ALGORITHM
-from errors import JwtExpiredSignatureError, UnauthorizedAdminError
+from exceptions import JwtExpiredSignatureError, UnauthorizedAdminError
 
 
 class AuthService:

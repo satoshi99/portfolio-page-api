@@ -1,5 +1,6 @@
 from typing import List, Type, Dict
 from schemas import Errors
+from fastapi_csrf_protect.exceptions import InvalidHeaderError
 
 
 class ApiException(Exception):
@@ -76,6 +77,15 @@ class ObjectNotFoundError(ApiException):
         self.message = message
 
 
+class CsrfInvalidHeaderError(InvalidHeaderError):
+    status_code = 422
+    error_code = "CSRF Invalid Header"
+
+    def __init__(self, message: str = "Invalid header in CSRF authenticate"):
+        super().__init__(message)
+        self.message = message
+
+
 def error_responses(error_types: List[Type[ApiException]]) -> Dict:
     d = {}
 
@@ -88,7 +98,7 @@ def error_responses(error_types: List[Type[ApiException]]) -> Dict:
                 'content': {
                     'application/json': {
                         'example': {
-                            'errors': [
+                            'exceptions': [
                                 {
                                     'status': error.status_code,
                                     'code': error.error_code,
@@ -101,7 +111,7 @@ def error_responses(error_types: List[Type[ApiException]]) -> Dict:
             }
         else:
             d[error_type.status_code]['description'] += f'<br>"{error_type.error_code}"'
-            d[error_type.status_code]['content']['application/json']['example']['errors']\
+            d[error_type.status_code]['content']['application/json']['example']['exceptions']\
                 .append({'status': error.status_code, 'code': error.error_code, 'message': error.message})
 
     return d

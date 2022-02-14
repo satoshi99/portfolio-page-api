@@ -82,7 +82,7 @@ class TagCrud:
         except Exception:
             logger.error("Failed insertion of new tag to db")
             db.rollback()
-            raise BadRequestError(message="Failed insertion of new tag to db")
+            raise BadRequestError(output_message="Failed insertion of new tag to db")
 
         logger.info({
             "action": "create new tag object",
@@ -101,7 +101,7 @@ class TagCrud:
         db_tag = self.get_tag(tag_id, db)
         if not db_tag:
             logger.error(f"Failed get tag by id: {tag_id} from db")
-            raise ObjectNotFoundError(message="The Tag was not found by ID")
+            raise ObjectNotFoundError(output_message="The Tag was not found by ID")
 
         try:
             db_tag = update_process(db_tag, new_tag)
@@ -128,7 +128,7 @@ class TagCrud:
         db_tag = self.get_tag(tag_id, db)
         if not db_tag:
             logger.error(f"Failed get tag by id: {tag_id} from db")
-            raise ObjectNotFoundError(message="The Tag was not found by ID")
+            raise ObjectNotFoundError(output_message="The Tag was not found by ID")
 
         try:
             db.delete(db_tag)
@@ -136,7 +136,7 @@ class TagCrud:
         except Exception:
             logger.error("Delete tag object has failed")
             db.rollback()
-            raise BadRequestError(message="Delete tag object has failed")
+            raise BadRequestError(output_message="Delete tag object has failed")
 
         if self.get_tag(tag_id, db):
             logger.warning("Delete process is done but the object has not deleted")

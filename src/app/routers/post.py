@@ -12,16 +12,20 @@ from cruds import post_crud
 from cruds.domain import map_post_tags
 from services import auth_service
 from .admin import get_current_active_admin
-from errors import error_responses, ObjectNotFoundError, BadRequestError, UnauthorizedAdminError, \
-    JwtExpiredSignatureError, AlreadyRegisteredError
+from exceptions import error_responses, ObjectNotFoundError, BadRequestError, AlreadyRegisteredError, jwt_errors_list
 
 router = APIRouter(prefix="/posts")
 
 
-@router.get("", status_code=status.HTTP_200_OK, response_model=List[post_schema.Post],
+@router.get("",
+            status_code=status.HTTP_200_OK,
+            response_model=List[post_schema.Post],
             responses={
                 200: {"description": "My Posts Requested"},
-                **error_responses([JwtExpiredSignatureError, UnauthorizedAdminError])
+                **error_responses([
+                    ObjectNotFoundError(message_list=["The admin user was not found", "The admin user is not active"]),
+                    *jwt_errors_list
+                ])
             })
 async def get_my_posts(
         response: Response,
@@ -33,29 +37,39 @@ async def get_my_posts(
     return posts
 
 
-@router.get("/public", status_code=status.HTTP_200_OK, response_model=List[post_schema.PostPublic],
+@router.get("/public",
+            status_code=status.HTTP_200_OK,
+            response_model=List[post_schema.PostPublic],
             responses={200: {"description": "Public Posts Requested"}})
 async def get_public_posts(db: Session = Depends(get_db)):
     posts = post_crud.get_public_posts(db)
     return posts
 
 
-@router.get("/{post_id}", status_code=status.HTTP_200_OK, response_model=post_schema.Post,
+@router.get("/{post_id}",
+            status_code=status.HTTP_200_OK,
+            response_model=post_schema.Post,
             responses={
                 200: {"description": "The Post Requested"},
-                **error_responses([ObjectNotFoundError])
+                **error_responses([ObjectNotFoundError(message_list=["The post was not found by ID"])])
             })
 async def get_post(post_id: UUID, db: Session = Depends(get_db)):
     post = post_crud.get_post(post_id, db)
     if not post:
-        raise ObjectNotFoundError(message="The post was not found by ID")
+        raise ObjectNotFoundError(output_message="The post was not found by ID")
     return post
 
 
-@router.post("/create", status_code=status.HTTP_201_CREATED, response_model=post_schema.Post,
+@router.post("/create",
+             status_code=status.HTTP_201_CREATED,
+             response_model=post_schema.Post,
              responses={
                  201: {"description": "The Post Created"},
-                 **error_responses([BadRequestError, JwtExpiredSignatureError, UnauthorizedAdminError])
+                 **error_responses([
+                     BadRequestError(),
+                     ObjectNotFoundError(message_list=["The admin user was not found", "The admin user is not active"]),
+                     *jwt_errors_list
+                 ])
              })
 async def create_post(
         data: post_schema.PostCreate,
@@ -74,11 +88,20 @@ async def create_post(
     return db_post
 
 
-@router.put("/{post_id}", status_code=status.HTTP_200_OK, response_model=post_schema.Post,
+@router.put("/{post_id}",
+            status_code=status.HTTP_200_OK,
+            response_model=post_schema.Post,
             responses={
                 200: {"description": "The Post Updated"},
-                **error_responses([BadRequestError, JwtExpiredSignatureError, UnauthorizedAdminError,
-                                   AlreadyRegisteredError])
+                **error_responses([
+                    BadRequestError(),
+                    *jwt_errors_list,
+                    AlreadyRegisteredError(message_list=["The post was not found by ID"]),
+                    ObjectNotFoundError(message_list=[
+                        "The post was not found by ID",
+                        "The admin user was not found",
+                        "The admin user is not active"])
+                ])
             })
 async def update_post(
         post_id: UUID,
@@ -95,7 +118,7 @@ async def update_post(
     posts = current_admin.posts
     db_post = [post for post in posts if post.id == post_id]
     if not db_post:
-        raise ObjectNotFoundError(message="The post was not found by ID")
+        raise ObjectNotFoundError(output_message="The post was not found by ID")
     db_post = post_crud.update_post(db_post[0], data, db)
 
     if tags and not db_post.tags:
@@ -105,10 +128,18 @@ async def update_post(
     return db_post
 
 
-@router.delete("{post_id}", status_code=status.HTTP_200_OK, response_model=ResponseMsg,
+@router.delete("{post_id}",
+               status_code=status.HTTP_200_OK,
+               response_model=ResponseMsg,
                responses={
                    200: {"description": "The Post Deleted"},
-                   **error_responses([ObjectNotFoundError, JwtExpiredSignatureError, UnauthorizedAdminError])
+                   **error_responses([
+                       ObjectNotFoundError(message_list=[
+                           "The post was not found by ID",
+                           "The admin user was not found",
+                           "The admin user is not active"]),
+                       *jwt_errors_list
+                   ])
                })
 async def delete_post(
         post_id: UUID,
@@ -123,7 +154,7 @@ async def delete_post(
     posts = current_admin.posts
     db_post = [post for post in posts if post.id == post_id]
     if not db_post:
-        raise ObjectNotFoundError(message="The post was not found by ID")
+        raise ObjectNotFoundError(output_message="The post was not found by ID")
 
     post_crud.delete_post(db_post[0], db)
 

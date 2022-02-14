@@ -57,7 +57,7 @@ async def api_exception_handler(request: Request, exc: ApiException):
         content={
             "status": exc.status_code,
             "code": exc.error_code,
-            "message": exc.message
+            "message": exc.output_message
         },
         headers=exc.headers
     )

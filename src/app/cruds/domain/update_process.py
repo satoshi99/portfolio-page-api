@@ -40,6 +40,5 @@ class UpdateProcess:
     def update_admin(self, db_admin: Admin, new_admin: AdminUpdate) -> Admin:
         if new_admin.email:
             db_admin.email = new_admin.email
-        if new_admin.is_active is not None:
-            db_admin.is_active = new_admin.is_active
+
         return db_admin

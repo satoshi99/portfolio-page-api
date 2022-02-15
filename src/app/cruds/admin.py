@@ -84,7 +84,7 @@ class AdminCrud:
         })
 
         try:
-            db_admin = update_process(current_admin, new_admin)
+            db_admin = update_process.update_admin(current_admin, new_admin)
             db.commit()
         except Exception as ex:
             logger.error("Failed update admin user")

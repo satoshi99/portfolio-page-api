@@ -15,7 +15,7 @@ from services import auth_service
 from utils.env import API_PREFIX
 
 from exceptions import error_responses, AlreadyRegisteredError, JwtExpiredSignatureError, UnauthorizedAdminError, \
-    ObjectNotFoundError, BadRequestError, jwt_errors_list, csrf_errors_list
+    ObjectNotFoundError, BadRequestError, jwt_errors_list, csrf_errors_list, ValidationError
 
 router = APIRouter(prefix="/admin")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{API_PREFIX}/admin/token")
@@ -59,8 +59,8 @@ def get_csrf_token(csrf_protect: CsrfProtect = Depends()):
              responses={
                  201: {"description": "Temporary Admin Created"},
                  **error_responses([
-                     AlreadyRegisteredError(message_list=["Requested Email already registered"]),
-                     *csrf_errors_list])})
+                     AlreadyRegisteredError(message_list=["The Email has already registered"]),
+                     *csrf_errors_list, ValidationError()])})
 async def create_admin_temporary(
         new_admin: admin_schema.AdminCreate,
         request: Request,
@@ -69,7 +69,7 @@ async def create_admin_temporary(
 ):
     auth_service.verify_csrf(request, csrf_protect)
     if admin_crud.get_admin_by_email(new_admin.email, db):
-        raise AlreadyRegisteredError(output_message="Requested Email already registered")
+        raise AlreadyRegisteredError(output_message="The Email has already registered")
     return admin_crud.create_admin(new_admin, db)
 
 
@@ -80,7 +80,7 @@ async def create_admin_temporary(
                  201: {"description": "Admin registered with Email verification"},
                  **error_responses([
                      ObjectNotFoundError(message_list=["The admin user was not found by request ID"]),
-                     BadRequestError(), *csrf_errors_list])})
+                     *csrf_errors_list, ValidationError()])})
 async def verify_email_and_register_admin(
         admin_id: UUID,
         request: Request,
@@ -100,7 +100,8 @@ async def verify_email_and_register_admin(
              responses={
                  201: {"description": "Access Token Created"},
                  **error_responses([
-                     UnauthorizedAdminError(message_list=["Incorrect email or password"]), *csrf_errors_list])})
+                     UnauthorizedAdminError(message_list=["Incorrect email or password"]),
+                     ValidationError(), *csrf_errors_list])})
 async def login_for_access_token(
         response: Response,
         request: Request,
@@ -123,7 +124,7 @@ async def login_for_access_token(
              response_model=ResponseMsg,
              responses={
                  200: {"description": "Delete Cookie Requested"},
-                 **error_responses([BadRequestError(), *csrf_errors_list])})
+                 **error_responses([*csrf_errors_list])})
 async def logout(response: Response, request: Request, csrf_protect: CsrfProtect = Depends()):
     auth_service.verify_csrf(request, csrf_protect)
     response.delete_cookie(key="access_token")
@@ -150,8 +151,7 @@ async def get_admin(response: Response, current_admin: Admin = Depends(get_curre
             response_model=admin_schema.Admin,
             responses={
                 200: {"description": "Admin Updated"},
-                **error_responses([BadRequestError(),
-                                   ObjectNotFoundError(message_list=[
+                **error_responses([ObjectNotFoundError(message_list=[
                                        "The admin user was not found",
                                        "The admin user is not active"]),
                                    *jwt_errors_list, *csrf_errors_list])})
@@ -174,12 +174,11 @@ async def update_admin(
             responses={
                 200: {"description": "Admin Password Updated"},
                 **error_responses([
-                    BadRequestError(message_list=["Invalid request of password"]),
                     ObjectNotFoundError(message_list=[
                                        "The admin user was not found",
                                        "The admin user is not active"]),
                     UnauthorizedAdminError(message_list=["Incorrect current password"]),
-                    JwtExpiredSignatureError(), *csrf_errors_list])})
+                    ValidationError(), JwtExpiredSignatureError(), *csrf_errors_list])})
 async def update_password_admin(
         password_data: admin_schema.PasswordUpdate,
         request: Request,
@@ -192,10 +191,10 @@ async def update_password_admin(
     if not auth_service.verify_password(password_data.current_password, current_admin.hashed_password):
         raise UnauthorizedAdminError(output_message="Incorrect current password")
     auth_service.update_jwt(current_admin.id, response)
-    if admin_crud.update_password(password_data.new_password, current_admin, db):
+    if admin_crud.update_password(password_data.password, current_admin, db):
         return {"message": "Successfully updated password"}
     else:
-        raise BadRequestError(output_message="Invalid request of password")
+        return {"message": "Failed updated password"}
 
 
 @router.put("/reset-password",
@@ -205,7 +204,7 @@ async def update_password_admin(
                 200: {"description": "Admin Password Reset"},
                 **error_responses([
                     ObjectNotFoundError(message_list=["The admin was not found. The Email is incorrect or does not register"]),
-                    BadRequestError(message_list=["Invalid request of password"]), *csrf_errors_list])})
+                    *csrf_errors_list])})
 async def reset_password_admin(
         new_admin: admin_schema.AdminCreate,
         request: Request,
@@ -219,7 +218,7 @@ async def reset_password_admin(
     if admin_crud.update_password(new_admin.password, db_admin, db):
         return {"message": "Successfully updated password"}
     else:
-        raise BadRequestError(output_message="Invalid request of password")
+        return {"message": "Failed updated password"}
 
 
 @router.delete("/delete",
@@ -227,8 +226,7 @@ async def reset_password_admin(
                response_model=ResponseMsg,
                responses={
                    200: {"description": "Admin Deleted"},
-                   **error_responses([BadRequestError(),
-                                      ObjectNotFoundError(message_list=[
+                   **error_responses([ObjectNotFoundError(message_list=[
                                           "The admin user was not found",
                                           "The admin user is not active"]),
                                       *jwt_errors_list, *csrf_errors_list])})
@@ -242,4 +240,4 @@ async def delete_admin(
     if admin_crud.delete_admin(current_admin, db):
         return {"message": "Successfully Admin Deleted"}
     else:
-        raise BadRequestError()
+        return {"message": "Failed admin deleted"}

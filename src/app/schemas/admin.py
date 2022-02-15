@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr, constr
-from typing import List
+from pydantic import BaseModel, EmailStr, constr, validator
+from typing import List, Optional
 from uuid import UUID
 from .post import Post
 
@@ -8,18 +8,27 @@ class AdminBase(BaseModel):
     email: EmailStr
 
 
-class AdminCreate(AdminBase):
+class PasswordCreate(BaseModel):
     password: constr(min_length=7, max_length=100)
+    password_confirm: str
+
+    @validator("password_confirm")
+    def passwords_match(cls, v, values, **kwargs):
+        if "password" in values and v != values["password"]:
+            raise ValueError("Password do not match")
+        return v
+
+
+class AdminCreate(PasswordCreate):
+    email: EmailStr
 
 
 class AdminUpdate(AdminBase):
-    email_verified: bool = False
-    is_active: bool = False
+    email: Optional[EmailStr]
 
 
-class PasswordUpdate(BaseModel):
+class PasswordUpdate(PasswordCreate):
     current_password: str
-    new_password: constr(min_length=7, max_length=100)
 
 
 class AdminInDBBase(AdminBase):

@@ -24,7 +24,7 @@ class UnauthorizedAdminError(ApiException):
 
     def __init__(
             self,
-            output_message: str = "Could not validate authentication credentials",
+            output_message: str = "Not authenticated",
             message_list: List[str] = None
     ):
         super().__init__(output_message, message_list)

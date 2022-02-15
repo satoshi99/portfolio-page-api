@@ -2,7 +2,8 @@ from .core_errors import \
     ApiException, \
     AlreadyRegisteredError, \
     ObjectNotFoundError, \
-    BadRequestError
+    BadRequestError, \
+    ValidationError
 
 from .csrf_errors import csrf_errors_list
 

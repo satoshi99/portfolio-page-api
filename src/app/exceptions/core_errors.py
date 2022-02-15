@@ -54,3 +54,21 @@ class ObjectNotFoundError(ApiException):
         super().__init__(output_message, message_list)
         if not message_list:
             self.message_list = [output_message]
+
+
+class ValidationError(ApiException):
+    status_code = 422
+    error_code = "Validation Error"
+
+    def __init__(self, message_list: List[str] = None):
+        if not message_list:
+            self.message_list = [
+                {
+                    "loc": [
+                        "body",
+                        "value"
+                    ],
+                    "msg": "value is not a valid",
+                    "type": "value_error.value"
+                }
+            ]

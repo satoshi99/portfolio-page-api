@@ -1,7 +1,8 @@
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_csrf_protect import CsrfProtect
 from fastapi_csrf_protect.exceptions import CsrfProtectError
@@ -36,6 +37,18 @@ app.add_middleware(
 @CsrfProtect.load_config
 def get_csrf_config():
     return CsrfSettings()
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "status": 422,
+            "code": "Validation Error",
+            "message": exc.errors()
+        }
+    )
 
 
 @app.exception_handler(CsrfProtectError)

@@ -3,7 +3,7 @@ from typing import List, Union
 from uuid import UUID
 from models import Tag
 from schemas import tag_schema
-from .domain import update_process
+from .domain import UpdateProcess
 from .domain.transformer import slug_transformer
 from exceptions import ObjectNotFoundError, BadRequestError
 
@@ -15,6 +15,8 @@ logger = setup_logger(log_folder=log_folder, modname=__name__)
 
 
 class TagCrud:
+
+    update_process = UpdateProcess()
 
     def get_tags(self, db: Session) -> List[Tag]:
         logger.info({
@@ -104,7 +106,8 @@ class TagCrud:
             raise ObjectNotFoundError(output_message="The Tag was not found by ID")
 
         try:
-            db_tag = update_process(db_tag, new_tag)
+            update_process = UpdateProcess()
+            db_tag = update_process.tag_process(db_tag, new_tag)
             db.commit()
         except Exception as ex:
             logger.error(f"Failed update tag with title: {new_tag.title} and slug: {new_tag.slug}")
@@ -133,10 +136,10 @@ class TagCrud:
         try:
             db.delete(db_tag)
             db.commit()
-        except Exception:
+        except Exception as ex:
             logger.error("Delete tag object has failed")
             db.rollback()
-            raise BadRequestError(output_message="Delete tag object has failed")
+            raise ex
 
         if self.get_tag(tag_id, db):
             logger.warning("Delete process is done but the object has not deleted")

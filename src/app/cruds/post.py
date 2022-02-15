@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 
 from models import Post
 from schemas import post_schema
-from .domain import update_process
+from .domain import UpdateProcess
 from .domain.transformer import slug_transformer
+from exceptions import AlreadyRegisteredError
 from utils.logger import setup_logger
 import datetime
 
@@ -93,6 +94,10 @@ class PostCrud:
             data = data.copy()
             data.url_slug = slug_transformer(data.title)
 
+        db_url_slugs = db.query(Post.url_slug).all()
+        if data.url_slug in db_url_slugs:
+            raise AlreadyRegisteredError(output_message="The url-slug has already registered")
+
         new_post = Post(**data.dict(), author_id=admin_id)
         db.add(new_post)
         db.commit()
@@ -106,7 +111,8 @@ class PostCrud:
             "status": "Run"
         })
         try:
-            db_post = update_process(db_post, new_post)
+            update_process = UpdateProcess()
+            db_post = update_process.post_process(db_post, new_post)
             db.commit()
 
         except Exception as e:

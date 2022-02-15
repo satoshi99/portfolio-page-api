@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from schemas import post_schema, tag_schema, admin_schema, ResponseMsg
 from cruds import post_crud
-from cruds.domain import map_post_tags
+from cruds.domain import MapPostAndTags
 from services import auth_service
 from .admin import get_current_active_admin
 from exceptions import error_responses, ObjectNotFoundError, BadRequestError, AlreadyRegisteredError, jwt_errors_list
@@ -66,7 +66,7 @@ async def get_post(post_id: UUID, db: Session = Depends(get_db)):
              responses={
                  201: {"description": "The Post Created"},
                  **error_responses([
-                     BadRequestError(),
+                     AlreadyRegisteredError(message_list=["The url-slug has already registered"]),
                      ObjectNotFoundError(message_list=["The admin user was not found", "The admin user is not active"]),
                      *jwt_errors_list
                  ])
@@ -84,6 +84,7 @@ async def create_post(
     auth_service.update_jwt(current_admin.id, response)
     db_post = post_crud.create_post(current_admin.id, data, db)
     if tags:
+        map_post_tags = MapPostAndTags()
         db_post = map_post_tags.create_map(tags, db_post, db)
     return db_post
 
@@ -94,7 +95,6 @@ async def create_post(
             responses={
                 200: {"description": "The Post Updated"},
                 **error_responses([
-                    BadRequestError(),
                     *jwt_errors_list,
                     AlreadyRegisteredError(message_list=["The post was not found by ID"]),
                     ObjectNotFoundError(message_list=[
@@ -121,6 +121,7 @@ async def update_post(
         raise ObjectNotFoundError(output_message="The post was not found by ID")
     db_post = post_crud.update_post(db_post[0], data, db)
 
+    map_post_tags = MapPostAndTags()
     if tags and not db_post.tags:
         db_post = map_post_tags.create_map(tags, db_post, db)
     elif tags:
@@ -128,7 +129,7 @@ async def update_post(
     return db_post
 
 
-@router.delete("{post_id}",
+@router.delete("/{post_id}",
                status_code=status.HTTP_200_OK,
                response_model=ResponseMsg,
                responses={

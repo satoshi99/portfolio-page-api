@@ -15,7 +15,7 @@ from services import auth_service
 from utils.env import API_PREFIX
 
 from exceptions import error_responses, AlreadyRegisteredError, JwtExpiredSignatureError, UnauthorizedAdminError, \
-    ObjectNotFoundError, BadRequestError, jwt_errors_list, csrf_errors_list, ValidationError
+    ObjectNotFoundError, jwt_errors_list, csrf_errors_list, ValidationError
 
 router = APIRouter(prefix="/admin")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{API_PREFIX}/admin/token")
@@ -226,10 +226,12 @@ async def reset_password_admin(
                response_model=ResponseMsg,
                responses={
                    200: {"description": "Admin Deleted"},
-                   **error_responses([ObjectNotFoundError(message_list=[
-                                          "The admin user was not found",
-                                          "The admin user is not active"]),
-                                      *jwt_errors_list, *csrf_errors_list])})
+                   **error_responses([
+                       ObjectNotFoundError(message_list=[
+                          "The admin user was not found",
+                          "The admin user is not active"]),
+                       *jwt_errors_list, *csrf_errors_list])
+               })
 async def delete_admin(
         request: Request,
         csrf_protect: CsrfProtect = Depends(),

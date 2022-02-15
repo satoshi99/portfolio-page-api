@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from models import Admin
 from schemas import admin_schema
-from .domain import update_process
+from .domain import UpdateProcess
 from services import auth_service
 from utils.logger import setup_logger
 from .domain.logging_utils import NoPasswordLogFilter
@@ -84,7 +84,8 @@ class AdminCrud:
         })
 
         try:
-            db_admin = update_process.update_admin(current_admin, new_admin)
+            update_process = UpdateProcess()
+            db_admin = update_process.admin_process(current_admin, new_admin)
             db.commit()
         except Exception as ex:
             logger.error("Failed update admin user")

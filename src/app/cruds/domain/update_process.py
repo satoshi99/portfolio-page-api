@@ -11,7 +11,7 @@ logger = setup_logger(log_folder=log_folder, modname=__name__)
 
 class UpdateProcess:
 
-    def update_post(self, db_post: Post, new_post: PostUpdate) -> Post:
+    def post_process(self, db_post: Post, new_post: PostUpdate) -> Post:
         if new_post.title:
             db_post.title = new_post.title
         if new_post.url_slug:
@@ -29,7 +29,7 @@ class UpdateProcess:
 
         return db_post
 
-    def update_tag(self, db_tag: Tag, new_tag: TagUpdate) -> Tag:
+    def tag_process(self, db_tag: Tag, new_tag: TagUpdate) -> Tag:
         if new_tag.title:
             db_tag.title = new_tag.title
         if new_tag.slug:
@@ -37,7 +37,7 @@ class UpdateProcess:
 
         return db_tag
 
-    def update_admin(self, db_admin: Admin, new_admin: AdminUpdate) -> Admin:
+    def admin_process(self, db_admin: Admin, new_admin: AdminUpdate) -> Admin:
         if new_admin.email:
             db_admin.email = new_admin.email
 

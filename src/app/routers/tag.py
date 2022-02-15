@@ -12,7 +12,8 @@ from database import get_db
 from services import auth_service
 from .admin import get_current_active_admin
 
-from exceptions import error_responses, ObjectNotFoundError, BadRequestError, AlreadyRegisteredError, jwt_errors_list
+from exceptions import error_responses, ObjectNotFoundError, BadRequestError, AlreadyRegisteredError, jwt_errors_list, \
+    ValidationError
 
 router = APIRouter(prefix="/tags")
 
@@ -20,10 +21,7 @@ router = APIRouter(prefix="/tags")
 @router.get("",
             status_code=status.HTTP_200_OK,
             response_model=Union[List[tag_schema.Tag], ResponseMsg],
-            responses={
-                200: {"description": "All Tags Requested"},
-                **error_responses([BadRequestError("message")])
-            })
+            responses={200: {"description": "All Tags Requested"}})
 async def get_tags(db: Session = Depends(get_db)):
     tags = tag_crud.get_tags(db)
     if not tags:
@@ -37,12 +35,15 @@ async def get_tags(db: Session = Depends(get_db)):
             response_model=post_schema.TagWithPosts,
             responses={
                 200: {"description": "Tag requested by ID"},
-                **error_responses([ObjectNotFoundError(message_list=["Tag was not found by ID"]), BadRequestError()])
+                **error_responses([
+                    ObjectNotFoundError(message_list=["The tag was not found by ID"]),
+                    ValidationError()
+                ])
             })
 async def get_tag_with_posts(tag_id: UUID, db: Session = Depends(get_db)):
     tag = tag_crud.get_tag(tag_id, db)
     if not tag:
-        raise ObjectNotFoundError(output_message="Tag was not found by ID")
+        raise ObjectNotFoundError(output_message="The tag was not found by ID")
 
     return tag
 
@@ -112,8 +113,8 @@ async def update_tag(
                        ObjectNotFoundError(message_list=[
                            "The Tag was not found by ID",
                            "The admin user was not found",
-                           "The admin user is not active"]),
-                       BadRequestError(message_list=["Delete tag object has failed"])])
+                           "The admin user is not active"])
+                   ])
                })
 async def delete_tag(
         tag_id: UUID,

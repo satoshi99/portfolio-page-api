@@ -67,13 +67,16 @@ async def get_post(post_id: UUID, db: Session = Depends(get_db)):
                  201: {"description": "The Post Created"},
                  **error_responses([
                      AlreadyRegisteredError(message_list=["The url-slug has already registered"]),
-                     ObjectNotFoundError(message_list=["The admin user was not found", "The admin user is not active"]),
+                     ObjectNotFoundError(message_list=[
+                         "The admin user was not found",
+                         "The admin user is not active",
+                         "The tag was not found by ID"]),
                      *jwt_errors_list
                  ])
              })
 async def create_post(
-        data: post_schema.PostCreate,
-        tags: List[tag_schema.TagCreate],
+        post_data: post_schema.PostCreate,
+        tag_ids: List[UUID],
         request: Request,
         response: Response,
         csrf_protect: CsrfProtect = Depends(),
@@ -82,10 +85,10 @@ async def create_post(
 ):
     auth_service.verify_csrf(request, csrf_protect)
     auth_service.update_jwt(current_admin.id, response)
-    db_post = post_crud.create_post(current_admin.id, data, db)
-    if tags:
+    db_post = post_crud.create_post(current_admin.id, post_data, db)
+    if tag_ids:
         map_post_tags = MapPostAndTags()
-        db_post = map_post_tags.create_map(tags, db_post, db)
+        db_post = map_post_tags.create_map(tag_ids, db_post, db)
     return db_post
 
 
@@ -99,14 +102,15 @@ async def create_post(
                     AlreadyRegisteredError(message_list=["The post was not found by ID"]),
                     ObjectNotFoundError(message_list=[
                         "The post was not found by ID",
+                        "The tag was not found by ID",
                         "The admin user was not found",
                         "The admin user is not active"])
                 ])
             })
 async def update_post(
         post_id: UUID,
-        data: post_schema.PostUpdate,
-        tags: List[tag_schema.TagCreate],
+        post_data: post_schema.PostUpdate,
+        tag_ids: List[UUID],
         request: Request,
         response: Response,
         csrf_protect: CsrfProtect = Depends(),
@@ -119,13 +123,13 @@ async def update_post(
     db_post = [post for post in posts if post.id == post_id]
     if not db_post:
         raise ObjectNotFoundError(output_message="The post was not found by ID")
-    db_post = post_crud.update_post(db_post[0], data, db)
+    db_post = post_crud.update_post(db_post[0], post_data, db)
 
     map_post_tags = MapPostAndTags()
-    if tags and not db_post.tags:
-        db_post = map_post_tags.create_map(tags, db_post, db)
-    elif tags:
-        db_post = map_post_tags.update_map(tags, db_post, db)
+    if tag_ids and not db_post.tags:
+        db_post = map_post_tags.create_map(tag_ids, db_post, db)
+    elif tag_ids:
+        db_post = map_post_tags.update_map(tag_ids, db_post, db)
     return db_post
 
 

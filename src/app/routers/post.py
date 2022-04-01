@@ -7,7 +7,7 @@ from fastapi_csrf_protect import CsrfProtect
 from sqlalchemy.orm import Session
 
 from database import get_db
-from schemas import post_schema, tag_schema, admin_schema, ResponseMsg
+from schemas import post_schema, admin_schema, ResponseMsg
 from cruds import post_crud
 from cruds.domain import MapPostAndTags
 from services import auth_service

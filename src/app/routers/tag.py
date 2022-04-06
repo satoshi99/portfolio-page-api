@@ -12,8 +12,8 @@ from database import get_db
 from services import auth_service
 from .admin import get_current_active_admin
 
-from exceptions import error_responses, ObjectNotFoundError, BadRequestError, AlreadyRegisteredError, jwt_errors_list, \
-    ValidationError
+from exceptions import error_responses, ObjectNotFoundError, AlreadyRegisteredError, jwt_errors_list, \
+    ValidationError, csrf_errors_list
 
 router = APIRouter(prefix="/tags")
 
@@ -56,7 +56,7 @@ async def get_tag_with_posts(tag_id: UUID, db: Session = Depends(get_db)):
                  **error_responses([
                      AlreadyRegisteredError(message_list=["The Tag already registered"]),
                      ObjectNotFoundError(message_list=["The admin user was not found", "The admin user is not active"]),
-                     *jwt_errors_list
+                     *jwt_errors_list, *csrf_errors_list
                  ])
              })
 async def create_tag(
@@ -83,7 +83,7 @@ async def create_tag(
                         "The Tag was not found by ID",
                         "The admin user was not found",
                         "The admin user is not active"]),
-                    *jwt_errors_list
+                    *jwt_errors_list, *csrf_errors_list
                 ])
             })
 async def update_tag(
@@ -110,6 +110,7 @@ async def update_tag(
                    200: {"description": "Tag Deleted"},
                    **error_responses([
                        *jwt_errors_list,
+                       *csrf_errors_list,
                        ObjectNotFoundError(message_list=[
                            "The Tag was not found by ID",
                            "The admin user was not found",

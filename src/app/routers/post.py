@@ -12,7 +12,7 @@ from cruds import post_crud
 from cruds.domain import MapPostAndTags
 from services import auth_service
 from .admin import get_current_active_admin
-from exceptions import error_responses, ObjectNotFoundError, BadRequestError, AlreadyRegisteredError, jwt_errors_list
+from exceptions import error_responses, ObjectNotFoundError, AlreadyRegisteredError, jwt_errors_list, csrf_errors_list
 
 router = APIRouter(prefix="/posts")
 
@@ -71,7 +71,7 @@ async def get_post(post_id: UUID, db: Session = Depends(get_db)):
                          "The admin user was not found",
                          "The admin user is not active",
                          "The tag was not found by ID"]),
-                     *jwt_errors_list
+                     *jwt_errors_list, *csrf_errors_list
                  ])
              })
 async def create_post(
@@ -99,6 +99,7 @@ async def create_post(
                 200: {"description": "The Post Updated"},
                 **error_responses([
                     *jwt_errors_list,
+                    *csrf_errors_list,
                     AlreadyRegisteredError(message_list=["The post was not found by ID"]),
                     ObjectNotFoundError(message_list=[
                         "The post was not found by ID",
@@ -143,7 +144,7 @@ async def update_post(
                            "The post was not found by ID",
                            "The admin user was not found",
                            "The admin user is not active"]),
-                       *jwt_errors_list
+                       *jwt_errors_list, *csrf_errors_list
                    ])
                })
 async def delete_post(

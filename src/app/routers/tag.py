@@ -103,7 +103,7 @@ async def update_tag(
     return tag_crud.update_tag(tag_id, new_tag, db)
 
 
-@router.delete("{tag_id}",
+@router.delete("/{tag_id}",
                status_code=status.HTTP_200_OK,
                response_model=ResponseMsg,
                responses={

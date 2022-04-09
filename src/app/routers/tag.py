@@ -30,7 +30,7 @@ async def get_tags(db: Session = Depends(get_db)):
     return tags
 
 
-@router.get("/{tag_id}",
+@router.get("/{tag_slug}",
             status_code=status.HTTP_200_OK,
             response_model=post_schema.TagWithPosts,
             responses={
@@ -40,10 +40,10 @@ async def get_tags(db: Session = Depends(get_db)):
                     ValidationError()
                 ])
             })
-async def get_tag_with_posts(tag_id: UUID, db: Session = Depends(get_db)):
-    tag = tag_crud.get_tag(tag_id, db)
+async def get_tag_with_posts(tag_slug: str, db: Session = Depends(get_db)):
+    tag = tag_crud.get_tag_by_slug(tag_slug, db)
     if not tag:
-        raise ObjectNotFoundError(output_message="The tag was not found by ID")
+        raise ObjectNotFoundError(output_message="The tag was not found by the slug")
 
     return tag
 

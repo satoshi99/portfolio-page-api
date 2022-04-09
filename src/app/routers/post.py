@@ -46,17 +46,17 @@ async def get_public_posts(db: Session = Depends(get_db)):
     return posts
 
 
-@router.get("/{post_id}",
+@router.get("/{post_slug}",
             status_code=status.HTTP_200_OK,
             response_model=post_schema.Post,
             responses={
                 200: {"description": "The Post Requested"},
                 **error_responses([ObjectNotFoundError(message_list=["The post was not found by ID"])])
             })
-async def get_post(post_id: UUID, db: Session = Depends(get_db)):
-    post = post_crud.get_post(post_id, db)
+async def get_public_post_by_slug(post_slug: str, db: Session = Depends(get_db)):
+    post = post_crud.get_public_post_by_slug(post_slug, db)
     if not post:
-        raise ObjectNotFoundError(output_message="The post was not found by ID")
+        raise ObjectNotFoundError(output_message="The post was not found by slug")
     return post
 
 

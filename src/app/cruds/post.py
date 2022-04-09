@@ -89,6 +89,25 @@ class PostCrud:
 
         return post
 
+    def get_public_post_by_slug(self, post_slug: str, db: Session) -> Post:
+        logger.info({
+            "action": "Get post by slug",
+            "post_slug": post_slug,
+            "status": "Run"
+        })
+        try:
+            post = db.query(Post).filter(Post.url_slug == post_slug and Post.is_public is True).first()
+        except Exception as ex:
+            logger.error("Failed get post by slug from db")
+            raise ex
+
+        logger.info({
+            "action": "Get post by slug",
+            "status": "Success"
+        })
+
+        return post
+
     def create_post(self, admin_id: UUID, data: post_schema.PostCreate, db: Session) -> Post:
         if not data.url_slug:
             data = data.copy()

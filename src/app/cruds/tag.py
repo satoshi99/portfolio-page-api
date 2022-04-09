@@ -49,14 +49,14 @@ class TagCrud:
 
         return db_tag
 
-    def get_tag_by_title(self, tag_title: str, db: Session) -> Union[Tag, bool]:
+    def get_tag_by_slug(self, tag_slug: str, db: Session) -> Union[Tag, bool]:
         logger.info({
             "action": "get tag by title",
-            "tag_id": tag_title,
+            "tag_id": tag_slug,
             "status": "run"
         })
 
-        db_tag = db.query(Tag).filter(Tag.title == tag_title).first()
+        db_tag = db.query(Tag).filter(Tag.slug == tag_slug).first()
         if not db_tag:
             return False
 
